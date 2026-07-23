@@ -1,0 +1,205 @@
+/* Cover Search — Modal styles */
+
+/* ---- Modal container sizing (responsive; never scrolls horizontally) ---- */
+.cover-search-modal-el {
+	width: min(90vw, 900px);
+	max-width: 90vw;
+	height: min(85vh, 700px);
+	max-height: 85vh;
+}
+
+/* contentEl fills the modal; layout is a vertical stack. */
+.cover-search-modal {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	overflow-x: hidden;
+}
+
+/* ---- Toolbar: wrapping, left-aligned, labeled controls ---- */
+.cover-search-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: flex-start;
+	gap: 10px;
+	flex: 0 0 auto;
+	width: 100%;
+}
+
+.cover-search-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.cover-search-field-search {
+	flex: 1 1 220px;
+	min-width: 180px;
+}
+
+.cover-search-field-mode {
+	flex: 0 1 160px;
+	min-width: 130px;
+}
+
+.cover-search-field-suffix {
+	flex: 0 1 140px;
+	min-width: 110px;
+}
+
+.cover-search-field-destination {
+	flex: 0 1 150px;
+	min-width: 120px;
+}
+
+.cover-search-field-refresh {
+	flex: 0 0 auto;
+}
+
+.cover-search-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	min-height: 1em;
+}
+
+/* Controls: comfortable tap targets (>= 40px), full width of their field. */
+.cover-search-input,
+.cover-search-select,
+.cover-search-refresh {
+	width: 100%;
+	min-height: 40px;
+	box-sizing: border-box;
+}
+
+.cover-search-refresh {
+	min-width: 96px;
+	cursor: pointer;
+}
+
+/* Suffix is disabled in Database mode (applies to Google Images only). */
+.cover-search-input:disabled,
+.cover-search-input-disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* ---- Effective-query preview (shows the exact string sent to the provider) ---- */
+.cover-search-query-preview {
+	flex: 0 0 auto;
+	padding: 2px 4px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.cover-search-query-preview code {
+	color: var(--text-normal);
+}
+
+/* ---- Loading indicator ---- */
+.cover-search-loading {
+	flex: 0 0 auto;
+	padding: 4px 0;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+/* ---- Responsive image grid (the only scrolling region) ---- */
+.cover-search-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 12px;
+	width: 100%;
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 4px;
+	align-content: start;
+}
+
+/* Each cell is a button so it is keyboard- and touch-accessible. */
+.cover-search-cell {
+	display: block;
+	width: 100%;
+	padding: 0;
+	margin: 0;
+	border: 2px solid transparent;
+	border-radius: 8px;
+	background: var(--background-secondary);
+	cursor: pointer;
+	overflow: hidden;
+	transition: border-color 0.12s ease, transform 0.12s ease;
+}
+
+/*
+ * Poster-ratio frame regardless of source image dimensions.
+ *
+ * The height is forced with the padding-top intrinsic-ratio technique rather
+ * than `aspect-ratio`: a vertical padding percentage resolves against the
+ * element's OWN width in every engine, so `height:0; padding-top:150%` makes
+ * the box exactly 2:3 (3/2 = 150%) even inside a <button> grid item, where the
+ * `aspect-ratio` height-resolution was not taking effect. The image is then
+ * absolutely positioned to fill that box and cropped with object-fit.
+ */
+.cover-search-frame {
+	position: relative;
+	width: 100%;
+	height: 0;
+	padding-top: 150%;
+	overflow: hidden;
+	background: var(--background-modifier-border);
+}
+
+.cover-search-thumb {
+	position: absolute;
+	inset: 0;
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* Selection affordance that works on touch (active) as well as pointer. */
+.cover-search-cell:hover,
+.cover-search-cell:focus-visible,
+.cover-search-cell:active {
+	border-color: var(--interactive-accent);
+	transform: scale(1.02);
+	outline: none;
+}
+
+.cover-search-empty {
+	grid-column: 1 / -1;
+	padding: 24px;
+	text-align: center;
+	color: var(--text-muted);
+}
+
+/* ---- Gallery theme scoping ---- */
+.cover-search-theme-light {
+	--background-secondary: #f2f3f5;
+	--background-modifier-border: #dcdde0;
+	color-scheme: light;
+}
+
+.cover-search-theme-dark {
+	--background-secondary: #1e1e1e;
+	--background-modifier-border: #333;
+	color-scheme: dark;
+}
+
+/* ---- Settings: mapping list ---- */
+.cover-search-mapping-list .setting-item {
+	border-top: none;
+	padding-top: 6px;
+	padding-bottom: 6px;
+}

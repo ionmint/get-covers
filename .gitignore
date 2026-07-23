@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+main.js
+main.js.map
+*.js.map
+
+# Obsidian plugin data — CONTIENE LE TUE API KEY (TMDb, Twitch, SerpAPI...)
+# Non va MAI committato
+data.json
+
+# Variabili d'ambiente / segreti
+.env
+.env.local
+*.key
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Log
+npm-debug.log*
+*.log
+
+# Vault di test (se lo tieni dentro la cartella del progetto)
+test-vault/
+*.obsidian/
+
+# TypeScript build info
+*.tsbuildinfo

@@ -1,0 +1,9 @@
+{
+	"id": "cover-search",
+	"name": "Cover Search",
+	"version": "1.0.0",
+	"minAppVersion": "1.4.0",
+	"description": "Search for a cover image for the current note and assign it to the note's cover frontmatter property.",
+	"author": "Cover Search",
+	"isDesktopOnly": false
+}
