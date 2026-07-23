@@ -8,15 +8,60 @@
 	max-height: 85vh;
 }
 
-/* contentEl fills the modal; layout is a vertical stack. */
+/*
+ * contentEl is the flex column and the height-bounded container: the toolbar
+ * (flex-shrink:0) stays fixed and ONLY the grid scrolls. `max-height` caps it
+ * against the viewport so the bound holds even when Obsidian gives the modal an
+ * auto height on mobile — otherwise the whole modal would scroll.
+ */
 .cover-search-modal {
+	/* Single source of truth for cell size/shape — tune the whole grid here.
+	   Cells are a FIXED width AND a FIXED height; they never resize with the
+	   window. The grid applies BOTH as fixed track sizes (grid-template-columns +
+	   grid-auto-rows), so it only ever reflows the COLUMN COUNT and scrolls
+	   vertically — every cover keeps its full 2:3 size. Both values below feed
+	   those tracks, so this block is the one place to retune the grid. */
+	--cover-cell-width: 180px;
+	/* width × 3/2 = the 2:3 book-cover ratio; the 3/2 here is the only place the
+	   ratio lives, so changing --cover-cell-width alone rescales the whole grid. */
+	--cover-cell-height: calc(var(--cover-cell-width) * 3 / 2);
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 	width: 100%;
 	height: 100%;
+	max-height: 85vh;
 	min-height: 0;
-	overflow-x: hidden;
+	overflow: hidden;
+}
+
+/*
+ * Mobile: same behavior, but at specificity 0,2,0 so it beats Obsidian's
+ * `.is-mobile .modal-content` (0,2,0) via later cascade — keeps contentEl a
+ * non-scrolling, height-bounded flex column on mobile too.
+ *
+ * The shared header row (`.cover-search-mobile-header`, built in modal.ts) is the
+ * first in-flow flex child, so `padding-top: 0` makes it flush with the top — no
+ * reserved band above it. (The close button that core reserved that space for has
+ * been moved down into the header, so the reservation is dead weight.)
+ */
+.cover-search-modal.cover-search-mobile {
+	display: flex;
+	flex-direction: column;
+	box-sizing: border-box;
+	padding-top: 0;
+	height: 100%;
+	max-height: 85vh;
+	overflow: hidden;
+}
+
+/*
+ * The modal element itself reserves top room for the (now-relocated) close
+ * button on mobile. Zero it so the content — and thus the X/Refresh row — sits
+ * flush at the top. Desktop is unaffected (rule is mobile-scoped).
+ */
+.cover-search-modal-el.cover-search-mobile {
+	padding-top: 0;
 }
 
 /* ---- Toolbar: wrapping, left-aligned, labeled controls ---- */
@@ -89,18 +134,20 @@
 }
 
 /* ---- Effective-query preview (shows the exact string sent to the provider) ---- */
+/* Wraps onto multiple lines so the full text is always visible — never
+   truncated. (Previously white-space:nowrap + ellipsis cut it off on mobile.) */
 .cover-search-query-preview {
 	flex: 0 0 auto;
 	padding: 2px 4px;
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 
 .cover-search-query-preview code {
 	color: var(--text-normal);
+	overflow-wrap: anywhere;
 }
 
 /* ---- Loading indicator ---- */
@@ -115,16 +162,36 @@
 /* ---- Responsive image grid (the only scrolling region) ---- */
 .cover-search-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	/* FIXED-width tracks (not 1fr): columns never stretch, so images keep a
+	   constant size. auto-fill packs as many as the width allows and wraps the
+	   rest; a narrow screen fits exactly one per row. */
+	grid-template-columns: repeat(auto-fill, var(--cover-cell-width));
+	/* FIXED-height rows too — this is what stops the covers from squishing.
+	   Without it the implicit rows are `auto` and collapse to SHARE the grid's own
+	   (flex/60vh-capped) height: each row becomes gridHeight ÷ rowCount, so the
+	   more the covers wrap (narrower window → more rows), the shorter each row —
+	   and the cell's `overflow:hidden` then crops the full-size cover into a flat
+	   sliver. Pinning every row to the cover height makes rows keep their full
+	   height; the grid overflows and scrolls vertically instead. */
+	grid-auto-rows: var(--cover-cell-height);
+	justify-content: center;
 	gap: 12px;
 	width: 100%;
 	flex: 1 1 auto;
 	min-height: 0;
+	/* Cap the grid's own height so it — and only it — scrolls once results
+	   overflow. The flex column above already bounds it; max-height is the
+	   explicit, self-contained cap requested for this phase. */
+	max-height: 60vh;
 	overflow-y: auto;
 	overflow-x: hidden;
+	-webkit-overflow-scrolling: touch; /* momentum scrolling on iOS WebView */
 	padding: 4px;
 	align-content: start;
 }
+
+/* Mobile needs no column override: the fixed-width tracks above already yield a
+   single column on a narrow screen, at the same constant image size as desktop. */
 
 /* Each cell is a button so it is keyboard- and touch-accessible. */
 .cover-search-cell {
@@ -141,25 +208,25 @@
 }
 
 /*
- * Poster-ratio frame regardless of source image dimensions.
+ * Fixed-format frame + image fill.
  *
- * The height is forced with the padding-top intrinsic-ratio technique rather
- * than `aspect-ratio`: a vertical padding percentage resolves against the
- * element's OWN width in every engine, so `height:0; padding-top:150%` makes
- * the box exactly 2:3 (3/2 = 150%) even inside a <button> grid item, where the
- * `aspect-ratio` height-resolution was not taking effect. The image is then
- * absolutely positioned to fill that box and cropped with object-fit.
+ * The frame (the per-cell thumbnail CONTAINER, not the <img>) simply fills its
+ * cell, which the grid pins to a fixed height via `grid-auto-rows` above — so
+ * every cover is shown at full height and never squished. The <img> then fills
+ * the frame and is cropped to fit with `object-fit: cover` (NOT `contain` — no
+ * letterboxing). The rules stay scoped (`.cover-search-modal .cover-search-grid …`,
+ * specificity 0,3,0) so core/theme `.modal img` (0,1,1) or `.is-mobile .modal img`
+ * (0,2,1) cannot reset the image's object-fit/position.
  */
-.cover-search-frame {
+.cover-search-modal .cover-search-grid .cover-search-frame {
 	position: relative;
 	width: 100%;
-	height: 0;
-	padding-top: 150%;
+	height: 100%;
 	overflow: hidden;
 	background: var(--background-modifier-border);
 }
 
-.cover-search-thumb {
+.cover-search-modal .cover-search-grid .cover-search-thumb {
 	position: absolute;
 	inset: 0;
 	display: block;
@@ -202,4 +269,97 @@
 	border-top: none;
 	padding-top: 6px;
 	padding-bottom: 6px;
+}
+
+/*
+ * ---- Narrow / mobile viewports ----
+ * Refresh drops to its own row below Destination and right-aligns there.
+ * Above this breakpoint the desktop layout (Destination + Refresh inline) is
+ * unchanged.
+ */
+@media (max-width: 600px) {
+	.cover-search-field-refresh {
+		flex: 1 0 100%; /* full-width own row, forcing a wrap before it */
+		align-items: flex-end; /* right-align the button on that row */
+	}
+
+	.cover-search-field-refresh .cover-search-label {
+		display: none; /* no empty label above the standalone button */
+	}
+
+	.cover-search-field-refresh .cover-search-refresh {
+		width: auto; /* intrinsic width, not full-row */
+	}
+}
+
+/*
+ * ---- Mobile toolbar layout (Platform.isMobile → .cover-search-mobile) ----
+ * Desktop is untouched: every rule below is scoped to the mobile class.
+ *
+ *   [ X ] .................... [ Refresh ]   corner buttons in the header band
+ *   Search                     (full-width row)
+ *   Suffix                     (full-width row)
+ *   Mode | Destination         (two columns, side by side)
+ *
+ * The "Searching: …" status line and the single-column, only-grid-scrolls
+ * behavior below the toolbar are unchanged.
+ */
+
+/*
+ * Shared header row. modal.ts moves BOTH the native close button (normally
+ * Obsidian chrome on modalEl) and the Refresh field (normally a toolbar control)
+ * into this one flex container, so they are true siblings on a single line:
+ * X left, Refresh right, both vertically centered. This container is created
+ * only on mobile, so the desktop DOM and layout are untouched.
+ */
+.cover-search-mobile-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex: 0 0 auto;
+	width: 100%;
+	min-height: 44px;
+}
+
+/* Undo core's absolute positioning so the moved X sits in the flex flow, left. */
+.cover-search-mobile-header .modal-close-button {
+	position: static;
+	top: auto;
+	right: auto;
+	left: auto;
+	margin: 0;
+}
+
+/*
+ * Refresh at the right end. Override the toolbar/media-query flex sizing (which
+ * would otherwise stretch it to a full row) back to intrinsic width.
+ */
+.cover-search-mobile-header .cover-search-field-refresh {
+	position: static;
+	flex: 0 0 auto;
+	width: auto;
+	margin: 0;
+}
+
+.cover-search-mobile-header .cover-search-field-refresh .cover-search-label {
+	display: none;
+}
+
+.cover-search-mobile-header .cover-search-refresh {
+	width: auto;
+	min-width: 88px; /* preserve touch target */
+	min-height: 40px;
+}
+
+/* Search and Suffix each keep their own full-width row. */
+.cover-search-mobile .cover-search-field-search,
+.cover-search-mobile .cover-search-field-suffix {
+	flex: 1 0 100%;
+}
+
+/* Mode and Destination share one row, splitting the width 50/50. */
+.cover-search-mobile .cover-search-field-mode,
+.cover-search-mobile .cover-search-field-destination {
+	flex: 1 1 0;
+	min-width: 0;
 }

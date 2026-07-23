@@ -1,4 +1,4 @@
-import { App, Modal, Notice } from "obsidian";
+import { App, Modal, Notice, Platform } from "obsidian";
 import {
 	CoverProvider,
 	CoverResult,
@@ -87,6 +87,8 @@ export class CoverSearchModal extends Modal {
 	private queryPreviewEl: HTMLElement | null = null;
 	private searchInputEl: HTMLInputElement | null = null;
 	private suffixInputEl: HTMLInputElement | null = null;
+	/** The Refresh toolbar field, kept so it can be relocated on mobile. */
+	private refreshFieldEl: HTMLElement | null = null;
 
 	/** Guards against overlapping searches racing to render. */
 	private searchToken = 0;
@@ -114,9 +116,37 @@ export class CoverSearchModal extends Modal {
 		contentEl.addClass("cover-search-modal");
 		// Responsive sizing lives on the modal container so only the grid scrolls.
 		modalEl.addClass("cover-search-modal-el");
+		// Drive mobile layout off Obsidian's real mobile signal, not just a width
+		// media query — the class carries enough specificity to beat core rules.
+		if (Platform.isMobile) {
+			contentEl.addClass("cover-search-mobile");
+			modalEl.addClass("cover-search-mobile");
+		}
 		this.applyTheme(contentEl, this.settings.galleryTheme);
 
+		// On mobile, both corner controls share ONE header row. This container is
+		// created first (top of the column); the native close button and the
+		// Refresh field are moved into it below. Desktop never creates it, so the
+		// desktop DOM is untouched.
+		const mobileHeader = Platform.isMobile
+			? contentEl.createDiv({ cls: "cover-search-mobile-header" })
+			: null;
+
 		this.buildToolbar(contentEl);
+
+		if (mobileHeader) {
+			// Pull Obsidian's close button (normally chrome on modalEl) and the
+			// Refresh field (normally a toolbar control) into the shared row, in
+			// left→right order: X first, Refresh second. Moving the elements keeps
+			// their existing event listeners intact.
+			const closeButton = this.modalEl.querySelector(".modal-close-button");
+			if (closeButton instanceof HTMLElement) {
+				mobileHeader.appendChild(closeButton);
+			}
+			if (this.refreshFieldEl) {
+				mobileHeader.appendChild(this.refreshFieldEl);
+			}
+		}
 
 		// Shows the exact query string sent to the provider on each search, so a
 		// live Suffix edit is verifiable even though the mock ignores the query.
@@ -138,7 +168,7 @@ export class CoverSearchModal extends Modal {
 
 	onClose(): void {
 		this.contentEl.empty();
-		this.modalEl.removeClass("cover-search-modal-el");
+		this.modalEl.removeClass("cover-search-modal-el", "cover-search-mobile");
 	}
 
 	private applyTheme(el: HTMLElement, theme: GalleryTheme): void {
@@ -232,6 +262,8 @@ export class CoverSearchModal extends Modal {
 
 		// Refresh (its own field so it aligns in the wrap flow).
 		const refreshField = this.createField(toolbar, " ", "refresh");
+		// Kept as a member so the mobile layout can relocate it into the header row.
+		this.refreshFieldEl = refreshField;
 		const refreshBtn = refreshField.createEl("button", {
 			cls: "cover-search-refresh mod-cta",
 			text: "Refresh",
