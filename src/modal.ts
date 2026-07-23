@@ -1,50 +1,22 @@
 import { App, Modal, Notice, Platform } from "obsidian";
 import {
 	CoverProvider,
-	CoverResult,
+	CoverSearchResult,
 	CoverSearchSettings,
 	Destination,
 	GalleryTheme,
 	SearchMode,
 } from "./types";
-
-/**
- * Phase 1 mock provider: returns a fixed set of fake results so the Modal and
- * grid can be built and visually tested without any network access.
- *
- * Implements the shared `CoverProvider` interface so real providers can drop in
- * later without changing the Modal.
- */
-class MockCoverProvider implements CoverProvider {
-	readonly id = "mock";
-
-	constructor(private readonly count: number) {}
-
-	async search(_query: string): Promise<CoverResult[]> {
-		const results: CoverResult[] = [];
-		// Use a per-search seed so Refresh returns a fresh-looking set.
-		const seedBase = Date.now() % 100000;
-		for (let i = 0; i < this.count; i++) {
-			const seed = seedBase + i;
-			results.push({
-				id: `mock-${seed}`,
-				// Deterministic `/seed/` endpoint: the thumbnail and the full image
-				// are the SAME photo at two resolutions, so the saved cover matches
-				// the clicked thumbnail. (The `?random=` endpoint returns a different
-				// random photo per request, which mismatched thumbnail vs full.)
-				thumbnailUrl: `https://picsum.photos/seed/${seed}/200/300`,
-				fullUrl: `https://picsum.photos/seed/${seed}/400/600`,
-				width: 400,
-				height: 600,
-				sourceLabel: "Mock",
-			});
-		}
-		return results;
-	}
-}
+import { resolveDatabaseProvider } from "./databaseResolver";
+import {
+	ProviderError,
+	RateLimitError,
+	ServiceUnavailableError,
+	TimeoutError,
+} from "./errors";
 
 /** Callback invoked when the user picks a cover. */
-export type OnSelectCover = (result: CoverResult) => void;
+export type OnSelectCover = (result: CoverSearchResult) => void;
 
 function isSearchMode(value: string): value is SearchMode {
 	return value === "database" || value === "google";
@@ -67,7 +39,6 @@ export class CoverSearchModal extends Modal {
 
 	private readonly settings: CoverSearchSettings;
 	private readonly onSelect: OnSelectCover;
-	private readonly provider: CoverProvider;
 
 	/** The Search field's starting text: just the note title, nothing else. */
 	private readonly initialQuery: string;
@@ -107,7 +78,6 @@ export class CoverSearchModal extends Modal {
 		this.noteType = noteType;
 		this.mode = settings.defaultSearchMode;
 		this.destination = settings.defaultDestination;
-		this.provider = new MockCoverProvider(Math.max(1, settings.maxResults));
 	}
 
 	onOpen(): void {
@@ -149,7 +119,7 @@ export class CoverSearchModal extends Modal {
 		}
 
 		// Shows the exact query string sent to the provider on each search, so a
-		// live Suffix edit is verifiable even though the mock ignores the query.
+		// live Suffix edit is verifiable before the request goes out.
 		this.queryPreviewEl = contentEl.createDiv({
 			cls: "cover-search-query-preview",
 		});
@@ -360,7 +330,23 @@ export class CoverSearchModal extends Modal {
 		this.gridEl.empty();
 
 		try {
-			const results = await this.provider.search(query);
+			// Pick the provider from the current Mode + Type routing. When none
+			// applies, resolveActiveProvider has already rendered an explanatory
+			// message into the grid, so just stop.
+			const provider = this.resolveActiveProvider();
+			if (provider === null) {
+				return;
+			}
+			if (query.length === 0) {
+				this.renderEmptyState("Type something to search for a cover.");
+				return;
+			}
+			// Only thumbnails are fetched here; the full-resolution URL is not
+			// requested until the user selects a result (see handleSelect).
+			const results = await provider.search(query, {
+				maxResults: Math.max(1, this.settings.maxResults),
+				timeoutMs: this.settings.requestTimeout,
+			});
 			// Ignore stale responses if another search started meanwhile.
 			if (token !== this.searchToken) {
 				return;
@@ -371,8 +357,9 @@ export class CoverSearchModal extends Modal {
 				return;
 			}
 			console.error("Cover Search: search failed", error);
-			new Notice("Cover Search: search failed.");
-			this.renderEmptyState("Something went wrong. Try again.");
+			const message = this.messageForError(error);
+			new Notice(`Cover Search: ${message}`);
+			this.renderEmptyState(message);
 		} finally {
 			if (token === this.searchToken) {
 				this.setLoading(false);
@@ -380,7 +367,63 @@ export class CoverSearchModal extends Modal {
 		}
 	}
 
-	private renderResults(results: CoverResult[]): void {
+	/**
+	 * Choose the provider for the current search from the Mode and the note's
+	 * Type routing. Returns `null` when no real provider applies — in which case
+	 * this method renders a short, user-facing explanation into the grid itself
+	 * (Google Images is not implemented in this phase).
+	 */
+	private resolveActiveProvider(): CoverProvider | null {
+		if (this.mode === "google") {
+			this.renderEmptyState(
+				"Google Images search isn't available yet. Switch Mode to " +
+					"Database and give the note a supported Type (e.g. Book) to " +
+					"search Google Books.",
+			);
+			return null;
+		}
+
+		const resolution = resolveDatabaseProvider(
+			this.noteType,
+			this.settings.typeMappings,
+			{ apiKeys: this.settings.apiKeys },
+		);
+		if (resolution.kind === "provider") {
+			return resolution.provider;
+		}
+
+		// A fallback to Google Images was signalled, but Google Images isn't
+		// implemented yet — surface why so the user knows what to change.
+		this.renderEmptyState(
+			`${resolution.reason} Google Images fallback isn't available yet — ` +
+				"only Books (Google Books) is wired so far.",
+		);
+		return null;
+	}
+
+	/**
+	 * Map a thrown error to a distinct, user-facing message. Every one of these
+	 * states keeps the toolbar's Refresh button as its retry action.
+	 */
+	private messageForError(error: unknown): string {
+		if (error instanceof RateLimitError) {
+			return "Rate limited — check your API key or try again shortly.";
+		}
+		if (error instanceof ServiceUnavailableError) {
+			return "Google Books is temporarily unavailable. Try again in a moment.";
+		}
+		if (error instanceof TimeoutError) {
+			return "Request timed out.";
+		}
+		if (error instanceof ProviderError) {
+			return error.status !== undefined
+				? `Provider error (${error.status}).`
+				: "Provider error.";
+		}
+		return "Something went wrong. Try again.";
+	}
+
+	private renderResults(results: CoverSearchResult[]): void {
 		if (!this.gridEl) {
 			return;
 		}
@@ -396,9 +439,9 @@ export class CoverSearchModal extends Modal {
 		}
 	}
 
-	private renderThumbnail(parent: HTMLElement, result: CoverResult): void {
+	private renderThumbnail(parent: HTMLElement, result: CoverSearchResult): void {
 		// Fresh per-cell closure: this handler is bound to THIS exact result object.
-		const selected: CoverResult = result;
+		const selected: CoverSearchResult = result;
 
 		// A <div> with the button role — NOT a <button>. A <button> establishes an
 		// internal content box that breaks the poster ratio of its descendants;
@@ -407,12 +450,12 @@ export class CoverSearchModal extends Modal {
 		const cell = parent.createDiv({ cls: "cover-search-cell" });
 		cell.setAttribute("role", "button");
 		cell.tabIndex = 0;
-		cell.setAttribute("aria-label", selected.sourceLabel ?? "Select cover");
+		cell.setAttribute("aria-label", selected.sourceLabel || "Select cover");
 
 		const frame = cell.createDiv({ cls: "cover-search-frame" });
 		const img = frame.createEl("img", { cls: "cover-search-thumb" });
 		img.src = selected.thumbnailUrl;
-		img.alt = selected.sourceLabel ?? "Cover";
+		img.alt = selected.sourceLabel || "Cover";
 		img.loading = "lazy";
 
 		cell.addEventListener("click", () => this.handleSelect(selected));
@@ -432,7 +475,7 @@ export class CoverSearchModal extends Modal {
 		this.gridEl.createDiv({ cls: "cover-search-empty", text: message });
 	}
 
-	private handleSelect(result: CoverResult): void {
+	private handleSelect(result: CoverSearchResult): void {
 		try {
 			this.onSelect(result);
 		} finally {

@@ -283,6 +283,28 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 					});
 			});
 
+		new Setting(containerEl)
+			.setName("Google Books API key (optional)")
+			.setDesc(
+				"Optional. Raises the Google Books request quota. Basic cover " +
+					"search works without a key.",
+			)
+			.addText((text) => {
+				text.inputEl.type = "password";
+				text
+					.setPlaceholder("Leave empty to use the free quota")
+					.setValue(this.plugin.settings.apiKeys.googleBooks ?? "")
+					.onChange(async (value) => {
+						const trimmed = value.trim();
+						if (trimmed.length > 0) {
+							this.plugin.settings.apiKeys.googleBooks = trimmed;
+						} else {
+							delete this.plugin.settings.apiKeys.googleBooks;
+						}
+						await this.plugin.saveSettings();
+					});
+			});
+
 		this.renderTypeMappings(containerEl);
 	}
 

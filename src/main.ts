@@ -1,5 +1,5 @@
 import { Menu, Notice, Plugin, TFile } from "obsidian";
-import { CoverSearchSettings, CoverResult } from "./types";
+import { CoverSearchSettings, CoverSearchResult } from "./types";
 import {
 	CoverSearchPluginContract,
 	CoverSearchSettingTab,
@@ -75,7 +75,7 @@ export default class CoverSearchPlugin
 			title,
 			noteType,
 			this.settings,
-			(result: CoverResult) => {
+			(result: CoverSearchResult) => {
 				void this.assignCover(file, result);
 			},
 		);
@@ -88,12 +88,15 @@ export default class CoverSearchPlugin
 		return typeof raw === "string" ? raw.trim() : "";
 	}
 
-	private async assignCover(file: TFile, result: CoverResult): Promise<void> {
+	private async assignCover(
+		file: TFile,
+		result: CoverSearchResult,
+	): Promise<void> {
 		try {
 			await this.frontmatter.setCover(
 				file,
 				this.settings.destinationProperty,
-				result.fullUrl,
+				result.fullResUrl,
 			);
 			new Notice("Cover Search: cover assigned.");
 		} catch (error) {

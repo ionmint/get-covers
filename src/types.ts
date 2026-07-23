@@ -28,39 +28,50 @@ export const CATEGORIES: readonly Category[] = [
 /** Gallery/theme preference for the search Modal. */
 export type GalleryTheme = "light" | "dark" | "auto";
 
-/** Which search backend the Modal targets. Phase 1: UI only, no branching yet. */
+/** Which search backend the Modal targets: structured Database routing, or Google Images. */
 export type SearchMode = "database" | "google";
 
 /** What to do with a selected cover: download it into the vault, or store the URL. */
 export type Destination = "download" | "url";
 
 /**
- * A single cover image result returned by a provider (or the Phase 1 mock).
+ * A single cover image result returned by a provider.
+ *
+ * `thumbnailUrl` is the small image shown in the grid — it is the ONLY image
+ * fetched while browsing results. `fullResUrl` is the best-available larger
+ * image and is requested ONLY when the user selects this result (see the Modal),
+ * which keeps mobile bandwidth down.
  */
-export interface CoverResult {
-	/** Stable identifier for this result within a result set. */
-	id: string;
-	/** URL for the grid thumbnail (smaller image). */
+export interface CoverSearchResult {
+	/** URL for the grid thumbnail (small image, loaded during search). */
 	thumbnailUrl: string;
-	/** URL for the full-resolution image (used when assigning/downloading). */
-	fullUrl: string;
-	/** Optional intrinsic width of the full image, if known. */
-	width?: number;
-	/** Optional intrinsic height of the full image, if known. */
-	height?: number;
-	/** Optional human-readable source label (e.g. provider name). */
-	sourceLabel?: string;
+	/**
+	 * URL for the best-available full-resolution image. Not necessarily a true
+	 * original — some providers (e.g. Google Books) only expose an enlarged
+	 * thumbnail. Requested only on selection.
+	 */
+	fullResUrl: string;
+	/** Human-readable label for the result (used as the image alt / aria text). */
+	sourceLabel: string;
+}
+
+/** Options every provider search receives: a bounded result count and timeout. */
+export interface CoverSearchOptions {
+	/** Maximum number of results to return. */
+	maxResults: number;
+	/** Network timeout in milliseconds; the provider must not exceed it. */
+	timeoutMs: number;
 }
 
 /**
- * Common interface every cover provider implements.
- * Real providers arrive in a later phase; the Phase 1 mock conforms to this shape.
+ * Common interface every cover provider implements: it turns a free-text query
+ * into zero or more cover results. Concrete providers live in `src/providers/`.
  */
 export interface CoverProvider {
 	/** Stable provider id (also the key used in the settings `apiKeys` map). */
 	readonly id: string;
 	/** Perform a search and return zero or more cover results. */
-	search(query: string): Promise<CoverResult[]>;
+	search(query: string, opts: CoverSearchOptions): Promise<CoverSearchResult[]>;
 }
 
 /** One row of the Type → Category mapping table. */
