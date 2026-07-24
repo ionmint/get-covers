@@ -1,4 +1,4 @@
-import { App, Notice, TFile } from "obsidian";
+import { App, TFile } from "obsidian";
 
 /**
  * Wraps all frontmatter mutations for the plugin.
@@ -17,7 +17,8 @@ export class FrontmatterService {
 	 * Write `value` into the `propertyName` frontmatter property of `file`.
 	 * Overwrites the property if it already exists, creates it otherwise.
 	 *
-	 * @throws re-throws after notifying the user, so callers may handle failure.
+	 * @throws Error with a user-facing message on failure. Messaging is left to the
+	 *         caller (the Modal) so the whole save flow shows a single Notice.
 	 */
 	async setCover(
 		file: TFile,
@@ -30,8 +31,7 @@ export class FrontmatterService {
 			});
 		} catch (error) {
 			console.error("Cover Search: failed to write frontmatter", error);
-			new Notice("Cover Search: failed to update the note's frontmatter.");
-			throw error;
+			throw new Error("Couldn't update the note's frontmatter.");
 		}
 	}
 

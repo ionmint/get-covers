@@ -16,8 +16,16 @@ import {
 	TimeoutError,
 } from "./errors";
 
-/** Callback invoked when the user picks a cover. */
-export type OnSelectCover = (result: CoverSearchResult) => void;
+/**
+ * Callback invoked when the user picks a cover. It performs the download/write and
+ * must REJECT (throwing an Error whose message is user-facing) on any failure —
+ * the Modal awaits it, closing only on success and staying open with a Notice on
+ * failure, so a failed save never loses the user's search.
+ */
+export type OnSelectCover = (
+	result: CoverSearchResult,
+	destination: Destination,
+) => Promise<void>;
 
 /** Settings `apiKeys` key under which the SerpAPI (Google Images) key is stored. */
 const SERPAPI_KEY = "serpapi";
@@ -79,6 +87,9 @@ export class CoverSearchModal extends Modal {
 
 	/** Guards against overlapping searches racing to render. */
 	private searchToken = 0;
+
+	/** True while a selected cover is being saved, to ignore further clicks. */
+	private isSaving = false;
 
 	/**
 	 * Session-local override of `settings.maxResults`, set via the in-modal count
@@ -582,11 +593,12 @@ export class CoverSearchModal extends Modal {
 		this.countCustomInputEl?.removeClass("has-error");
 	}
 
-	private setLoading(loading: boolean): void {
+	private setLoading(loading: boolean, message = "Loading…"): void {
 		if (!this.loadingEl) {
 			return;
 		}
 		if (loading) {
+			this.loadingEl.setText(message);
 			this.loadingEl.show();
 		} else {
 			this.loadingEl.hide();
@@ -759,11 +771,11 @@ export class CoverSearchModal extends Modal {
 		img.alt = selected.sourceLabel || "Cover";
 		img.loading = "lazy";
 
-		cell.addEventListener("click", () => this.handleSelect(selected));
+		cell.addEventListener("click", () => void this.handleSelect(selected));
 		cell.addEventListener("keydown", (evt: KeyboardEvent) => {
 			if (evt.key === "Enter" || evt.key === " ") {
 				evt.preventDefault();
-				this.handleSelect(selected);
+				void this.handleSelect(selected);
 			}
 		});
 	}
@@ -776,11 +788,34 @@ export class CoverSearchModal extends Modal {
 		this.gridEl.createDiv({ cls: "cover-search-empty", text: message });
 	}
 
-	private handleSelect(result: CoverSearchResult): void {
+	/**
+	 * Save the picked cover via the onSelect callback (download + frontmatter write,
+	 * or URL write). The Modal closes ONLY after that succeeds; on failure it shows
+	 * a Notice and stays open so the user keeps their search and can retry or pick
+	 * another result. Re-entrant clicks during a save are ignored.
+	 */
+	private async handleSelect(result: CoverSearchResult): Promise<void> {
+		if (this.isSaving) {
+			return;
+		}
+		this.isSaving = true;
+		this.setLoading(
+			true,
+			this.destination === "download" ? "Saving cover…" : "Saving…",
+		);
 		try {
-			this.onSelect(result);
+			await this.onSelect(result, this.destination);
+			this.close(); // success only
+		} catch (error) {
+			console.error("Cover Search: failed to save cover", error);
+			const message =
+				error instanceof Error && error.message.length > 0
+					? error.message
+					: "Couldn't save the cover. Try again.";
+			new Notice(`Cover Search: ${message}`);
 		} finally {
-			this.close();
+			this.isSaving = false;
+			this.setLoading(false);
 		}
 	}
 }
