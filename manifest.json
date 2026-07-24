@@ -5,6 +5,5 @@
 	"minAppVersion": "1.4.0",
 	"description": "Search for a cover image for the current note and assign it to the note's cover frontmatter property.",
 	"author": "ionmint",
-	"authorUrl": "https://github.com/ionmint",
 	"isDesktopOnly": false
 }
