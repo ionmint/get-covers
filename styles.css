@@ -366,19 +366,6 @@
 	color: var(--text-muted);
 }
 
-/* ---- Gallery theme scoping ---- */
-.cover-search-theme-light {
-	--background-secondary: #f2f3f5;
-	--background-modifier-border: #dcdde0;
-	color-scheme: light;
-}
-
-.cover-search-theme-dark {
-	--background-secondary: #1e1e1e;
-	--background-modifier-border: #333;
-	color-scheme: dark;
-}
-
 /* ---- Settings: mapping list ---- */
 .cover-search-mapping-list .setting-item {
 	border-top: none;

@@ -4,7 +4,6 @@ import {
 	CoverSearchResult,
 	CoverSearchSettings,
 	Destination,
-	GalleryTheme,
 	SearchMode,
 } from "./types";
 import { resolveDatabaseProvider } from "./databaseResolver";
@@ -85,7 +84,15 @@ export class CoverSearchModal extends Modal {
 	/** The Refresh toolbar field, kept so it can be relocated on mobile. */
 	private refreshFieldEl: HTMLElement | null = null;
 
-	/** Guards against overlapping searches racing to render. */
+	/**
+	 * Monotonic "search generation" counter — the stale-response guard. Every
+	 * search (and Modal close) increments it; each request captures the value at
+	 * start and, on resolve, compares it against the current one before touching
+	 * any state or DOM. A mismatch means the search was superseded (Refresh, Mode
+	 * change, new query) or the Modal was closed, so the result is discarded
+	 * silently. This is NOT a network abort — requestUrl has no cancel API, so the
+	 * request still completes; the guard only stops a stale result from rendering.
+	 */
 	private searchToken = 0;
 
 	/** True while a selected cover is being saved, to ignore further clicks. */
@@ -133,7 +140,6 @@ export class CoverSearchModal extends Modal {
 			contentEl.addClass("cover-search-mobile");
 			modalEl.addClass("cover-search-mobile");
 		}
-		this.applyTheme(contentEl, this.settings.galleryTheme);
 
 		// On mobile, both corner controls share ONE header row. This container is
 		// created first (top of the column); the native close button and the
@@ -178,21 +184,17 @@ export class CoverSearchModal extends Modal {
 	}
 
 	onClose(): void {
+		// Advance the search generation so ANY in-flight requestUrl result captured
+		// before this point fails its generation check when it resolves and is
+		// discarded silently (requestUrl has no cancel API — the request still
+		// completes in the background, but it can no longer touch this closed Modal).
+		this.searchToken++;
 		// Tear down the count popover first so its document-level dismiss listeners
 		// never outlive the modal.
 		this.closeCountPopover();
 		this.contentEl.empty();
+		this.gridEl = null;
 		this.modalEl.removeClass("cover-search-modal-el", "cover-search-mobile");
-	}
-
-	private applyTheme(el: HTMLElement, theme: GalleryTheme): void {
-		el.removeClass("cover-search-theme-light", "cover-search-theme-dark");
-		if (theme === "light") {
-			el.addClass("cover-search-theme-light");
-		} else if (theme === "dark") {
-			el.addClass("cover-search-theme-dark");
-		}
-		// "auto" adds no class and inherits the Obsidian theme.
 	}
 
 	/** Create one labeled toolbar field (label stacked above its control). */

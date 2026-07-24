@@ -10,7 +10,6 @@ import {
 	Category,
 	CoverSearchSettings,
 	Destination,
-	GalleryTheme,
 	SearchMode,
 	TypeMapping,
 } from "./types";
@@ -34,7 +33,6 @@ export const DEFAULT_SETTINGS: CoverSearchSettings = {
 	typeProperty: "Type",
 	maxResults: 6,
 	requestTimeout: 10000,
-	galleryTheme: "auto",
 	defaultSearchMode: "database",
 	defaultDestination: "download",
 	typeMappings: DEFAULT_TYPE_MAPPINGS.map((m) => ({ ...m })),
@@ -96,9 +94,6 @@ export function mergeSettings(loaded: unknown): CoverSearchSettings {
 	) {
 		base.requestTimeout = Math.max(1000, Math.floor(data.requestTimeout));
 	}
-	if (isGalleryTheme(data.galleryTheme)) {
-		base.galleryTheme = data.galleryTheme;
-	}
 	if (isSearchMode(data.defaultSearchMode)) {
 		base.defaultSearchMode = data.defaultSearchMode;
 	}
@@ -110,10 +105,6 @@ export function mergeSettings(loaded: unknown): CoverSearchSettings {
 	}
 
 	return base;
-}
-
-function isGalleryTheme(value: unknown): value is GalleryTheme {
-	return value === "light" || value === "dark" || value === "auto";
 }
 
 function isSearchMode(value: unknown): value is SearchMode {
@@ -229,23 +220,6 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 						const parsed = Number.parseInt(value, 10);
 						if (Number.isFinite(parsed) && parsed >= 1000) {
 							this.plugin.settings.requestTimeout = parsed;
-							await this.plugin.saveSettings();
-						}
-					});
-			});
-
-		new Setting(containerEl)
-			.setName("Gallery theme")
-			.setDesc("Appearance of the cover search gallery.")
-			.addDropdown((dropdown) => {
-				dropdown
-					.addOption("auto", "Auto")
-					.addOption("light", "Light")
-					.addOption("dark", "Dark")
-					.setValue(this.plugin.settings.galleryTheme)
-					.onChange(async (value) => {
-						if (isGalleryTheme(value)) {
-							this.plugin.settings.galleryTheme = value;
 							await this.plugin.saveSettings();
 						}
 					});

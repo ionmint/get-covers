@@ -25,9 +25,6 @@ export const CATEGORIES: readonly Category[] = [
 	"Games",
 ] as const;
 
-/** Gallery/theme preference for the search Modal. */
-export type GalleryTheme = "light" | "dark" | "auto";
-
 /** Which search backend the Modal targets: structured Database routing, or Google Images. */
 export type SearchMode = "database" | "google";
 
@@ -96,8 +93,6 @@ export interface CoverSearchSettings {
 	maxResults: number;
 	/** Network request timeout, in milliseconds. */
 	requestTimeout: number;
-	/** Gallery theme preference for the Modal. */
-	galleryTheme: GalleryTheme;
 	/** Default search mode the Modal opens with. */
 	defaultSearchMode: SearchMode;
 	/** Default destination the Modal opens with. */
