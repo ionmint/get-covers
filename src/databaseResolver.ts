@@ -27,12 +27,8 @@ export interface ProviderContext {
  *   fall back to Google Images; `reason` is a short, user-facing explanation.
  */
 export type DatabaseResolution =
-	| { kind: "provider"; category: Category; provider: CoverProvider }
-	| {
-			kind: "google-images-fallback";
-			category: Category | null;
-			reason: string;
-	  };
+	| { kind: "provider"; provider: CoverProvider }
+	| { kind: "google-images-fallback"; reason: string };
 
 /**
  * The outcome of mapping a Category to a provider: either a ready provider, or a
@@ -120,19 +116,15 @@ export function resolveDatabaseProvider(
 			shownType.length > 0
 				? `No category is mapped to Type "${shownType}".`
 				: "This note has no Type set.";
-		return { kind: "google-images-fallback", category: null, reason };
+		return { kind: "google-images-fallback", reason };
 	}
 
 	const resolution = resolveProviderForCategory(category, context);
 	if (!resolution.ok) {
-		return {
-			kind: "google-images-fallback",
-			category,
-			reason: resolution.reason,
-		};
+		return { kind: "google-images-fallback", reason: resolution.reason };
 	}
 
-	return { kind: "provider", category, provider: resolution.provider };
+	return { kind: "provider", provider: resolution.provider };
 }
 
 /**

@@ -29,37 +29,15 @@ export function sanitizeFilename(name: string): string {
 }
 
 /**
- * Create a debounced version of `fn` that delays invocation until `wait`
- * milliseconds have elapsed since the last call.
- *
- * Typed without `any`: the wrapped function must return void.
- */
-export function debounce<T extends (...args: never[]) => void>(
-	fn: T,
-	wait: number,
-): (...args: Parameters<T>) => void {
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-	return (...args: Parameters<T>): void => {
-		if (timeoutId !== null) {
-			clearTimeout(timeoutId);
-		}
-		timeoutId = setTimeout(() => {
-			timeoutId = null;
-			fn(...args);
-		}, wait);
-	};
-}
-
-/**
  * Race a promise against a timeout. If `promise` does not settle within
  * `timeoutMs`, the returned promise rejects with a timeout error.
  *
  * Used to bound network calls made through Obsidian's `requestUrl`, which has no
  * native timeout. Note: the underlying request is NOT aborted (requestUrl exposes
  * no abort signal); once the timeout wins, its eventual result is simply ignored.
+ * Internal to this module — `withRetry` is the only caller.
  */
-export function withTimeout<T>(
+function withTimeout<T>(
 	promise: Promise<T>,
 	timeoutMs: number,
 	message = "Request timed out.",

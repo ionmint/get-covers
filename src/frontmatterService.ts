@@ -34,25 +34,4 @@ export class FrontmatterService {
 			throw new Error("Couldn't update the note's frontmatter.");
 		}
 	}
-
-	/**
-	 * Read the current value of the `propertyName` frontmatter property, if any.
-	 * Returns `undefined` when the property is absent or not a string.
-	 */
-	async getCover(
-		file: TFile,
-		propertyName: string,
-	): Promise<string | undefined> {
-		try {
-			let result: string | undefined;
-			await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-				const raw: unknown = frontmatter[propertyName];
-				result = typeof raw === "string" ? raw : undefined;
-			});
-			return result;
-		} catch (error) {
-			console.error("Cover Search: failed to read frontmatter", error);
-			return undefined;
-		}
-	}
 }

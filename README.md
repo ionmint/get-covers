@@ -68,8 +68,8 @@ googleImageProvider.ts Google Images (SerpAPI) lives at the src root because it 
 providers/providerHttp.ts   Shared HTTP plumbing: `requestOnce` (one requestUrl
                             call → typed errors), `retryOptions` (the shared
                             transient-retry policy), and JSON type-guards.
-utils.ts               `withRetry` / `withTimeout` (generic, provider-agnostic),
-                       `sanitizeFilename`, `debounce`.
+utils.ts               `withRetry` / `withTimeout` (generic, provider-agnostic)
+                       and `sanitizeFilename`.
 errors.ts              Typed error hierarchy: RateLimitError (429),
                        ServiceUnavailableError (503), TimeoutError, ProviderError.
   │  (on select)
@@ -265,10 +265,10 @@ src/
   settings.ts                Defaults, defensive settings merge, settings tab UI
   databaseResolver.ts        Type → Category → provider routing (+ Google Images fallback)
   types.ts                   Shared types & interfaces (no runtime logic)
-  utils.ts                   withRetry / withTimeout, sanitizeFilename, debounce
+  utils.ts                   withRetry / withTimeout, sanitizeFilename
   errors.ts                  Typed provider error hierarchy
   downloadService.ts         Downloads a cover into the vault (Vault API only)
-  frontmatterService.ts      Reads/writes the cover via processFrontMatter
+  frontmatterService.ts      Writes the cover via processFrontMatter
   googleImageProvider.ts     Google Images provider (SerpAPI) — the fallback backend
   providers/
     providerHttp.ts          Shared HTTP: requestOnce, retryOptions, JSON type-guards
