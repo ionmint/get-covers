@@ -26,9 +26,12 @@ export class FrontmatterService {
 		value: string,
 	): Promise<void> {
 		try {
-			await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
-				frontmatter[propertyName] = value;
-			});
+			await this.app.fileManager.processFrontMatter(
+				file,
+				(frontmatter: Record<string, unknown>) => {
+					frontmatter[propertyName] = value;
+				},
+			);
 		} catch (error) {
 			console.error("Get Covers: failed to write frontmatter", error);
 			throw new Error("Couldn't update the note's frontmatter.");

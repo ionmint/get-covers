@@ -43,14 +43,17 @@ function withTimeout<T>(
 	message = "Request timed out.",
 ): Promise<T> {
 	return new Promise<T>((resolve, reject) => {
-		const timer = setTimeout(() => reject(new TimeoutError(message)), timeoutMs);
+		const timer = window.setTimeout(
+			() => reject(new TimeoutError(message)),
+			timeoutMs,
+		);
 		promise.then(
 			(value) => {
-				clearTimeout(timer);
+				window.clearTimeout(timer);
 				resolve(value);
 			},
 			(error: unknown) => {
-				clearTimeout(timer);
+				window.clearTimeout(timer);
 				reject(error instanceof Error ? error : new Error(String(error)));
 			},
 		);
@@ -135,5 +138,5 @@ function defaultIsRetryable(error: unknown): boolean {
 
 /** Promise-based delay. */
 function sleep(ms: number): Promise<void> {
-	return new Promise((resolve) => setTimeout(resolve, ms));
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
 }

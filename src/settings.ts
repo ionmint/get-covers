@@ -150,7 +150,7 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Get Covers" });
+		new Setting(containerEl).setName("Get Covers").setHeading();
 
 		new Setting(containerEl)
 			.setName("Download folder")
@@ -268,7 +268,7 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 	 * SteamGridDB require one, and AniList needs none (so it has no field).
 	 */
 	private renderApiKeys(containerEl: HTMLElement): void {
-		containerEl.createEl("h3", { text: "Provider API keys" });
+		new Setting(containerEl).setName("Provider API keys").setHeading();
 		containerEl.createEl("p", {
 			text:
 				"Stored locally with this vault and never committed. AniList " +
@@ -351,7 +351,7 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 	}
 
 	private renderTypeMappings(containerEl: HTMLElement): void {
-		containerEl.createEl("h3", { text: "Type → Category mapping" });
+		new Setting(containerEl).setName("Type → Category mapping").setHeading();
 		containerEl.createEl("p", {
 			text:
 				"Map your note Type values to a fixed category. Matching is " +

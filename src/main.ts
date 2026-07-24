@@ -26,7 +26,7 @@ export default class CoverSearchPlugin
 		this.addSettingTab(new CoverSearchSettingTab(this.app, this));
 
 		this.addCommand({
-			id: "get-covers-open",
+			id: "open",
 			name: "Search Cover",
 			callback: () => this.openForActiveFile(),
 		});
