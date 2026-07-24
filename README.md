@@ -10,6 +10,12 @@ Pick a note, search a structured database (Google Books, TMDb, AniList, SteamGri
 
 ## Features
 
+
+<img width="49%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1404ad94-e95f-4693-8d2b-ce3c1026c991" />
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1541f169-460f-45f8-a8e0-2d12a7e84e29" />
+
+
+
 - **Find a cover for the current note** from the command palette, the ribbon icon, or the file context menu (“Search Cover”).
 - **Touch-friendly image grid** — a responsive gallery of fixed-size poster-ratio results with a dedicated mobile layout; only the grid scrolls.
 - **Two search modes**
