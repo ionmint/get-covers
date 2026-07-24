@@ -150,8 +150,6 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName("Get Covers").setHeading();
-
 		new Setting(containerEl)
 			.setName("Download folder")
 			.setDesc("Vault-relative folder where downloaded covers are stored.")
