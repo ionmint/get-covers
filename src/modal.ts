@@ -26,6 +26,16 @@ function isDestination(value: string): value is Destination {
 	return value === "download" || value === "url";
 }
 
+/** Preset result-count choices offered by the in-modal count popover. */
+const COUNT_PRESETS: readonly number[] = [2, 4, 8];
+
+/**
+ * Upper bound accepted for a custom result count. Matches the practical ceiling
+ * the providers honor (AniList caps a page at 50; Google Books clamps its own to
+ * 40), so a larger value is rejected outright rather than silently clamped.
+ */
+const MAX_RESULTS_CAP = 50;
+
 /**
  * The cover search Modal: a toolbar plus a responsive, touch-friendly image grid.
  */
@@ -63,6 +73,20 @@ export class CoverSearchModal extends Modal {
 
 	/** Guards against overlapping searches racing to render. */
 	private searchToken = 0;
+
+	/**
+	 * Session-local override of `settings.maxResults`, set via the in-modal count
+	 * popover. `null` means "use the settings default". Never persisted, and reset
+	 * to `null` on every new Modal open (a fresh instance starts here).
+	 */
+	private resultCountOverride: number | null = null;
+
+	/** The clickable "N results ▾" segment in the status line, and its popover parts. */
+	private countControlEl: HTMLElement | null = null;
+	private countTriggerEl: HTMLElement | null = null;
+	private countPopoverEl: HTMLElement | null = null;
+	private countCustomInputEl: HTMLInputElement | null = null;
+	private countErrorEl: HTMLElement | null = null;
 
 	constructor(
 		app: App,
@@ -137,6 +161,9 @@ export class CoverSearchModal extends Modal {
 	}
 
 	onClose(): void {
+		// Tear down the count popover first so its document-level dismiss listeners
+		// never outlive the modal.
+		this.closeCountPopover();
 		this.contentEl.empty();
 		this.modalEl.removeClass("cover-search-modal-el", "cover-search-mobile");
 	}
@@ -298,13 +325,237 @@ export class CoverSearchModal extends Modal {
 		if (!this.queryPreviewEl) {
 			return;
 		}
+		// The status line is about to be rebuilt, orphaning the old count control —
+		// close any open popover (and drop its listeners) before wiping it.
+		this.closeCountPopover();
 		this.queryPreviewEl.empty();
 		this.queryPreviewEl.appendText("Searching: ");
 		this.queryPreviewEl.createEl("code", { text: query });
 		// Type is shown here as routing context ONLY — it is deliberately not part
 		// of the query above.
 		const routing = this.noteType.length > 0 ? this.noteType : "none";
-		this.queryPreviewEl.appendText(`  ·  Mode: ${this.mode}  ·  Type: ${routing}`);
+		this.queryPreviewEl.appendText(
+			`  ·  Mode: ${this.mode}  ·  Type: ${routing}  ·  `,
+		);
+		this.renderCountTrigger(this.queryPreviewEl);
+	}
+
+	/**
+	 * Effective result count for the current search: the session override when one
+	 * is active, otherwise the settings default (floored to at least 1). This is
+	 * the single value that reaches a provider's `search()` — providers never read
+	 * `settings.maxResults` directly.
+	 */
+	private getEffectiveMaxResults(): number {
+		if (this.resultCountOverride !== null) {
+			return this.resultCountOverride;
+		}
+		return Math.max(1, this.settings.maxResults);
+	}
+
+	/**
+	 * Render the trailing "N results ▾" segment of the status line as a clickable
+	 * control that opens the count popover. Rebuilt on every status-line refresh so
+	 * the number always reflects the effective count.
+	 */
+	private renderCountTrigger(parent: HTMLElement): void {
+		// A positioned inline wrapper so the popover can anchor to the trigger
+		// regardless of where the wrapping status line places it.
+		const control = parent.createSpan({ cls: "cover-search-count-control" });
+		this.countControlEl = control;
+
+		const count = this.getEffectiveMaxResults();
+		const trigger = control.createEl("button", {
+			cls: "cover-search-count-trigger",
+			text: `${count} ${count === 1 ? "result" : "results"} ▾`,
+		});
+		trigger.type = "button";
+		trigger.setAttribute("aria-haspopup", "true");
+		trigger.setAttribute("aria-expanded", "false");
+		trigger.addEventListener("click", (evt: MouseEvent) => {
+			evt.preventDefault();
+			evt.stopPropagation();
+			this.toggleCountPopover();
+		});
+		this.countTriggerEl = trigger;
+	}
+
+	private toggleCountPopover(): void {
+		if (this.countPopoverEl) {
+			this.closeCountPopover();
+		} else {
+			this.openCountPopover();
+		}
+	}
+
+	/** Build and show the count popover: presets + a validated Custom row. */
+	private openCountPopover(): void {
+		if (!this.countControlEl || !this.countTriggerEl) {
+			return;
+		}
+		this.closeCountPopover(); // safety: never stack two popovers
+
+		const popover = this.countControlEl.createDiv({
+			cls: "cover-search-count-popover",
+		});
+		popover.setAttribute("role", "menu");
+		this.countPopoverEl = popover;
+		this.countTriggerEl.setAttribute("aria-expanded", "true");
+
+		const current = this.getEffectiveMaxResults();
+
+		let firstOption: HTMLElement | null = null;
+		for (const preset of COUNT_PRESETS) {
+			const option = popover.createEl("button", {
+				cls: "cover-search-count-option",
+				text: String(preset),
+			});
+			option.type = "button";
+			option.setAttribute("role", "menuitemradio");
+			const isCurrent = preset === current;
+			option.setAttribute("aria-checked", isCurrent ? "true" : "false");
+			if (isCurrent) {
+				option.addClass("is-selected");
+			}
+			option.addEventListener("click", () => this.commitCount(preset));
+			if (firstOption === null) {
+				firstOption = option;
+			}
+		}
+
+		// Custom row: a number input committing on Enter or blur.
+		const customRow = popover.createDiv({ cls: "cover-search-count-custom" });
+		customRow.createSpan({
+			cls: "cover-search-count-custom-label",
+			text: "Custom",
+		});
+		const input = customRow.createEl("input", {
+			cls: "cover-search-count-input",
+			type: "number",
+		});
+		input.min = "1";
+		input.max = String(MAX_RESULTS_CAP);
+		input.step = "1";
+		input.value = String(current);
+		this.countCustomInputEl = input;
+
+		const errorEl = popover.createDiv({ cls: "cover-search-count-error" });
+		errorEl.hide();
+		this.countErrorEl = errorEl;
+
+		input.addEventListener("keydown", (evt: KeyboardEvent) => {
+			if (evt.key === "Enter") {
+				evt.preventDefault();
+				this.commitCustomCount();
+			}
+		});
+		// Typing clears a previous validation error so the field feels responsive.
+		input.addEventListener("input", () => this.clearCountError());
+		// Commit on blur too — but deferred and identity-checked, so a competing
+		// click (a preset, or an outside-click that dismisses) settles first and
+		// this becomes a no-op rather than committing a stale value.
+		input.addEventListener("blur", () => {
+			const el = input;
+			window.setTimeout(() => {
+				if (this.countCustomInputEl === el) {
+					this.commitCustomCount();
+				}
+			}, 0);
+		});
+
+		this.attachCountDismissHandlers();
+
+		// Land focus inside the popover for keyboard users (a button, so no mobile
+		// keyboard pops up — matching the modal's no-autofocus-input policy).
+		firstOption?.focus();
+	}
+
+	/** Remove the popover and its dismiss listeners; safe to call when already closed. */
+	private closeCountPopover(): void {
+		// Always detach listeners (no-op if never attached) so none can leak.
+		document.removeEventListener("pointerdown", this.handleCountOutsidePointer, true);
+		document.removeEventListener("keydown", this.handleCountKeydown, true);
+		if (this.countPopoverEl) {
+			this.countPopoverEl.remove();
+			this.countPopoverEl = null;
+		}
+		this.countCustomInputEl = null;
+		this.countErrorEl = null;
+		this.countTriggerEl?.setAttribute("aria-expanded", "false");
+	}
+
+	private attachCountDismissHandlers(): void {
+		// Capture phase so we see the event before in-modal handlers; the opening
+		// click's own pointerdown already fired, so this won't self-close.
+		document.addEventListener("pointerdown", this.handleCountOutsidePointer, true);
+		document.addEventListener("keydown", this.handleCountKeydown, true);
+	}
+
+	/** Close the popover when a pointer press lands outside its control. */
+	private readonly handleCountOutsidePointer = (evt: PointerEvent): void => {
+		if (
+			this.countControlEl &&
+			evt.target instanceof Node &&
+			this.countControlEl.contains(evt.target)
+		) {
+			return; // press inside the control (trigger, option, input) — keep open
+		}
+		this.closeCountPopover();
+	};
+
+	/** Escape closes the popover (and keeps the modal open) and restores focus. */
+	private readonly handleCountKeydown = (evt: KeyboardEvent): void => {
+		if (evt.key === "Escape") {
+			evt.preventDefault();
+			evt.stopPropagation();
+			this.closeCountPopover();
+			this.countTriggerEl?.focus();
+		}
+	};
+
+	/** Apply a validated count, close the popover, and re-run the current search. */
+	private commitCount(value: number): void {
+		this.resultCountOverride = value;
+		this.closeCountPopover();
+		// runSearch bumps searchToken and reads getEffectiveMaxResults() fresh, so a
+		// slower in-flight request for the old count can't overwrite these results.
+		void this.runSearch();
+	}
+
+	/** Validate the Custom input and commit it, or show an inline error and stay open. */
+	private commitCustomCount(): void {
+		if (!this.countCustomInputEl) {
+			return;
+		}
+		const raw = this.countCustomInputEl.value.trim();
+		const parsed = Number(raw);
+		if (
+			raw.length === 0 ||
+			!Number.isInteger(parsed) ||
+			parsed <= 0 ||
+			parsed > MAX_RESULTS_CAP
+		) {
+			this.showCountError(
+				`Enter a whole number from 1 to ${MAX_RESULTS_CAP}.`,
+			);
+			return;
+		}
+		this.commitCount(parsed);
+	}
+
+	private showCountError(message: string): void {
+		if (!this.countErrorEl) {
+			return;
+		}
+		this.countErrorEl.setText(message);
+		this.countErrorEl.show();
+		this.countCustomInputEl?.addClass("has-error");
+		this.countCustomInputEl?.focus();
+	}
+
+	private clearCountError(): void {
+		this.countErrorEl?.hide();
+		this.countCustomInputEl?.removeClass("has-error");
 	}
 
 	private setLoading(loading: boolean): void {
@@ -343,8 +594,9 @@ export class CoverSearchModal extends Modal {
 			}
 			// Only thumbnails are fetched here; the full-resolution URL is not
 			// requested until the user selects a result (see handleSelect).
+			// The count is the session override when set, else the settings default.
 			const results = await provider.search(query, {
-				maxResults: Math.max(1, this.settings.maxResults),
+				maxResults: this.getEffectiveMaxResults(),
 				timeoutMs: this.settings.requestTimeout,
 			});
 			// Ignore stale responses if another search started meanwhile.
