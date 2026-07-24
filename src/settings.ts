@@ -150,7 +150,7 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "Cover Search" });
+		containerEl.createEl("h2", { text: "Get Covers" });
 
 		new Setting(containerEl)
 			.setName("Download folder")
@@ -312,6 +312,14 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 			keyId: "serpapi",
 			placeholder: "SerpAPI key",
 		});
+
+		containerEl.createEl("p", {
+			text:
+				"This product uses the TMDb API but is not endorsed or certified by " +
+				"TMDb. Image licensing is your responsibility — search results " +
+				"(especially from Google Images) may be copyrighted.",
+			cls: "setting-item-description",
+		});
 	}
 
 	/**
@@ -351,7 +359,7 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 			cls: "setting-item-description",
 		});
 
-		const listEl = containerEl.createDiv({ cls: "cover-search-mapping-list" });
+		const listEl = containerEl.createDiv({ cls: "get-covers-mapping-list" });
 
 		this.plugin.settings.typeMappings.forEach((mapping, index) => {
 			const rowSetting = new Setting(listEl);

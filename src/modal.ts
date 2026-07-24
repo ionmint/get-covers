@@ -131,14 +131,14 @@ export class CoverSearchModal extends Modal {
 	onOpen(): void {
 		const { contentEl, modalEl } = this;
 		contentEl.empty();
-		contentEl.addClass("cover-search-modal");
+		contentEl.addClass("get-covers-modal");
 		// Responsive sizing lives on the modal container so only the grid scrolls.
-		modalEl.addClass("cover-search-modal-el");
+		modalEl.addClass("get-covers-modal-el");
 		// Drive mobile layout off Obsidian's real mobile signal, not just a width
 		// media query — the class carries enough specificity to beat core rules.
 		if (Platform.isMobile) {
-			contentEl.addClass("cover-search-mobile");
-			modalEl.addClass("cover-search-mobile");
+			contentEl.addClass("get-covers-mobile");
+			modalEl.addClass("get-covers-mobile");
 		}
 
 		// On mobile, both corner controls share ONE header row. This container is
@@ -146,7 +146,7 @@ export class CoverSearchModal extends Modal {
 		// Refresh field are moved into it below. Desktop never creates it, so the
 		// desktop DOM is untouched.
 		const mobileHeader = Platform.isMobile
-			? contentEl.createDiv({ cls: "cover-search-mobile-header" })
+			? contentEl.createDiv({ cls: "get-covers-mobile-header" })
 			: null;
 
 		this.buildToolbar(contentEl);
@@ -168,14 +168,14 @@ export class CoverSearchModal extends Modal {
 		// Shows the exact query string sent to the provider on each search, so a
 		// live Suffix edit is verifiable before the request goes out.
 		this.queryPreviewEl = contentEl.createDiv({
-			cls: "cover-search-query-preview",
+			cls: "get-covers-query-preview",
 		});
 
-		this.loadingEl = contentEl.createDiv({ cls: "cover-search-loading" });
+		this.loadingEl = contentEl.createDiv({ cls: "get-covers-loading" });
 		this.loadingEl.setText("Loading…");
 		this.loadingEl.hide();
 
-		this.gridEl = contentEl.createDiv({ cls: "cover-search-grid" });
+		this.gridEl = contentEl.createDiv({ cls: "get-covers-grid" });
 
 		// NOTE: deliberately do NOT auto-focus any input — doing so pops the
 		// on-screen keyboard on mobile. Focus happens only on explicit user tap.
@@ -194,7 +194,7 @@ export class CoverSearchModal extends Modal {
 		this.closeCountPopover();
 		this.contentEl.empty();
 		this.gridEl = null;
-		this.modalEl.removeClass("cover-search-modal-el", "cover-search-mobile");
+		this.modalEl.removeClass("get-covers-modal-el", "get-covers-mobile");
 	}
 
 	/** Create one labeled toolbar field (label stacked above its control). */
@@ -204,22 +204,22 @@ export class CoverSearchModal extends Modal {
 		modifier: string,
 	): HTMLElement {
 		const field = parent.createDiv({
-			cls: `cover-search-field cover-search-field-${modifier}`,
+			cls: `get-covers-field get-covers-field-${modifier}`,
 		});
 		field.createEl("label", {
-			cls: "cover-search-label",
+			cls: "get-covers-label",
 			text: labelText,
 		});
 		return field;
 	}
 
 	private buildToolbar(parent: HTMLElement): void {
-		const toolbar = parent.createDiv({ cls: "cover-search-toolbar" });
+		const toolbar = parent.createDiv({ cls: "get-covers-toolbar" });
 
 		// Search.
 		const searchField = this.createField(toolbar, "Search", "search");
 		const searchInput = searchField.createEl("input", {
-			cls: "cover-search-input",
+			cls: "get-covers-input",
 			type: "text",
 		});
 		searchInput.placeholder = "Search for a cover…";
@@ -237,7 +237,7 @@ export class CoverSearchModal extends Modal {
 		// Suffix.
 		const suffixField = this.createField(toolbar, "Suffix", "suffix");
 		const suffixInput = suffixField.createEl("input", {
-			cls: "cover-search-input",
+			cls: "get-covers-input",
 			type: "text",
 		});
 		suffixInput.placeholder = CoverSearchModal.DEFAULT_SUFFIX;
@@ -247,7 +247,7 @@ export class CoverSearchModal extends Modal {
 		// Mode.
 		const modeField = this.createField(toolbar, "Mode", "mode");
 		const modeSelect = modeField.createEl("select", {
-			cls: "cover-search-select dropdown",
+			cls: "get-covers-select dropdown",
 		});
 		modeSelect.createEl("option", { value: "database", text: "Database" });
 		modeSelect.createEl("option", { value: "google", text: "Google Images" });
@@ -266,7 +266,7 @@ export class CoverSearchModal extends Modal {
 		// Destination.
 		const destField = this.createField(toolbar, "Destination", "destination");
 		const destSelect = destField.createEl("select", {
-			cls: "cover-search-select dropdown",
+			cls: "get-covers-select dropdown",
 		});
 		destSelect.createEl("option", { value: "download", text: "Download" });
 		destSelect.createEl("option", { value: "url", text: "URL" });
@@ -282,7 +282,7 @@ export class CoverSearchModal extends Modal {
 		// Kept as a member so the mobile layout can relocate it into the header row.
 		this.refreshFieldEl = refreshField;
 		const refreshBtn = refreshField.createEl("button", {
-			cls: "cover-search-refresh mod-cta",
+			cls: "get-covers-refresh mod-cta",
 			text: "Refresh",
 		});
 		refreshBtn.type = "button";
@@ -305,7 +305,7 @@ export class CoverSearchModal extends Modal {
 		}
 		const enabled = this.mode === "google";
 		this.suffixInputEl.disabled = !enabled;
-		this.suffixInputEl.toggleClass("cover-search-input-disabled", !enabled);
+		this.suffixInputEl.toggleClass("get-covers-input-disabled", !enabled);
 	}
 
 	/**
@@ -398,12 +398,12 @@ export class CoverSearchModal extends Modal {
 	private renderCountTrigger(parent: HTMLElement): void {
 		// A positioned inline wrapper so the popover can anchor to the trigger
 		// regardless of where the wrapping status line places it.
-		const control = parent.createSpan({ cls: "cover-search-count-control" });
+		const control = parent.createSpan({ cls: "get-covers-count-control" });
 		this.countControlEl = control;
 
 		const count = this.getEffectiveMaxResults();
 		const trigger = control.createEl("button", {
-			cls: "cover-search-count-trigger",
+			cls: "get-covers-count-trigger",
 			text: `${count} ${count === 1 ? "result" : "results"} ▾`,
 		});
 		trigger.type = "button";
@@ -433,7 +433,7 @@ export class CoverSearchModal extends Modal {
 		this.closeCountPopover(); // safety: never stack two popovers
 
 		const popover = this.countControlEl.createDiv({
-			cls: "cover-search-count-popover",
+			cls: "get-covers-count-popover",
 		});
 		popover.setAttribute("role", "menu");
 		this.countPopoverEl = popover;
@@ -444,7 +444,7 @@ export class CoverSearchModal extends Modal {
 		let firstOption: HTMLElement | null = null;
 		for (const preset of COUNT_PRESETS) {
 			const option = popover.createEl("button", {
-				cls: "cover-search-count-option",
+				cls: "get-covers-count-option",
 				text: String(preset),
 			});
 			option.type = "button";
@@ -461,13 +461,13 @@ export class CoverSearchModal extends Modal {
 		}
 
 		// Custom row: a number input committing on Enter or blur.
-		const customRow = popover.createDiv({ cls: "cover-search-count-custom" });
+		const customRow = popover.createDiv({ cls: "get-covers-count-custom" });
 		customRow.createSpan({
-			cls: "cover-search-count-custom-label",
+			cls: "get-covers-count-custom-label",
 			text: "Custom",
 		});
 		const input = customRow.createEl("input", {
-			cls: "cover-search-count-input",
+			cls: "get-covers-count-input",
 			type: "number",
 		});
 		input.min = "1";
@@ -476,7 +476,7 @@ export class CoverSearchModal extends Modal {
 		input.value = String(current);
 		this.countCustomInputEl = input;
 
-		const errorEl = popover.createDiv({ cls: "cover-search-count-error" });
+		const errorEl = popover.createDiv({ cls: "get-covers-count-error" });
 		errorEl.hide();
 		this.countErrorEl = errorEl;
 
@@ -653,9 +653,9 @@ export class CoverSearchModal extends Modal {
 			if (token !== this.searchToken) {
 				return;
 			}
-			console.error("Cover Search: search failed", error);
+			console.error("Get Covers: search failed", error);
 			const message = this.messageForError(error);
-			new Notice(`Cover Search: ${message}`);
+			new Notice(`Get Covers: ${message}`);
 			this.renderEmptyState(message);
 		} finally {
 			if (token === this.searchToken) {
@@ -695,7 +695,7 @@ export class CoverSearchModal extends Modal {
 		// Automatic fallback: no usable Database provider for this note. Explain why,
 		// flip the UI to Google Images (setMode also enables the Suffix input), and
 		// resolve the image provider instead.
-		new Notice(`Cover Search: ${resolution.reason} Falling back to Google Images.`);
+		new Notice(`Get Covers: ${resolution.reason} Falling back to Google Images.`);
 		this.setMode("google");
 		return this.resolveGoogleImageProvider();
 	}
@@ -762,13 +762,13 @@ export class CoverSearchModal extends Modal {
 		// internal content box that breaks the poster ratio of its descendants;
 		// a div is a normal grid/block participant, with keyboard handling added
 		// for accessibility parity.
-		const cell = parent.createDiv({ cls: "cover-search-cell" });
+		const cell = parent.createDiv({ cls: "get-covers-cell" });
 		cell.setAttribute("role", "button");
 		cell.tabIndex = 0;
 		cell.setAttribute("aria-label", selected.sourceLabel || "Select cover");
 
-		const frame = cell.createDiv({ cls: "cover-search-frame" });
-		const img = frame.createEl("img", { cls: "cover-search-thumb" });
+		const frame = cell.createDiv({ cls: "get-covers-frame" });
+		const img = frame.createEl("img", { cls: "get-covers-thumb" });
 		img.src = selected.thumbnailUrl;
 		img.alt = selected.sourceLabel || "Cover";
 		img.loading = "lazy";
@@ -787,7 +787,7 @@ export class CoverSearchModal extends Modal {
 			return;
 		}
 		this.gridEl.empty();
-		this.gridEl.createDiv({ cls: "cover-search-empty", text: message });
+		this.gridEl.createDiv({ cls: "get-covers-empty", text: message });
 	}
 
 	/**
@@ -809,12 +809,12 @@ export class CoverSearchModal extends Modal {
 			await this.onSelect(result, this.destination);
 			this.close(); // success only
 		} catch (error) {
-			console.error("Cover Search: failed to save cover", error);
+			console.error("Get Covers: failed to save cover", error);
 			const message =
 				error instanceof Error && error.message.length > 0
 					? error.message
 					: "Couldn't save the cover. Try again.";
-			new Notice(`Cover Search: ${message}`);
+			new Notice(`Get Covers: ${message}`);
 		} finally {
 			this.isSaving = false;
 			this.setLoading(false);

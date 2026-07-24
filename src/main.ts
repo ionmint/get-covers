@@ -26,7 +26,7 @@ export default class CoverSearchPlugin
 		this.addSettingTab(new CoverSearchSettingTab(this.app, this));
 
 		this.addCommand({
-			id: "cover-search-open",
+			id: "get-covers-open",
 			name: "Search Cover",
 			callback: () => this.openForActiveFile(),
 		});
@@ -61,7 +61,7 @@ export default class CoverSearchPlugin
 	private openForActiveFile(): void {
 		const file = this.app.workspace.getActiveFile();
 		if (!file) {
-			new Notice("Cover Search: open a note first.");
+			new Notice("Get Covers: open a note first.");
 			return;
 		}
 		this.openForFile(file);
@@ -124,8 +124,8 @@ export default class CoverSearchPlugin
 
 		new Notice(
 			destination === "download"
-				? "Cover Search: cover downloaded and assigned."
-				: "Cover Search: cover URL assigned.",
+				? "Get Covers: cover downloaded and assigned."
+				: "Get Covers: cover URL assigned.",
 		);
 	}
 }

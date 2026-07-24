@@ -3,6 +3,7 @@ import {
 	RequestUrlResponse,
 	TFile,
 	TFolder,
+	normalizePath,
 	requestUrl,
 } from "obsidian";
 import { sanitizeFilename } from "./utils";
@@ -60,7 +61,7 @@ export class DownloadService {
 		try {
 			return await requestUrl({ url, method: "GET" });
 		} catch (error) {
-			console.error("Cover Search: image download failed", error);
+			console.error("Get Covers: image download failed", error);
 			throw new Error(
 				"Couldn't download the image. Check your connection or try a " +
 					"different result.",
@@ -88,7 +89,7 @@ export class DownloadService {
 			) {
 				return;
 			}
-			console.error("Cover Search: failed to create download folder", error);
+			console.error("Get Covers: failed to create download folder", error);
 			throw new Error(`Couldn't create the download folder "${folderPath}".`);
 		}
 	}
@@ -105,7 +106,7 @@ export class DownloadService {
 			}
 			await this.app.vault.createBinary(path, data);
 		} catch (error) {
-			console.error("Cover Search: failed to write image to vault", error);
+			console.error("Get Covers: failed to write image to vault", error);
 			throw new Error("Couldn't save the image into your vault.");
 		}
 	}
@@ -113,12 +114,12 @@ export class DownloadService {
 
 /** Normalize a folder setting to a clean vault-relative path (no leading/trailing "/"). */
 function normalizeFolder(folderSetting: string): string {
-	return folderSetting
-		.trim()
-		.replace(/\\/g, "/") // tolerate backslashes typed by Windows users
-		.replace(/^\/+/, "")
-		.replace(/\/+$/, "")
-		.replace(/\/{2,}/g, "/");
+	// Run the user-supplied path through Obsidian's own normalizer first — it
+	// collapses duplicate and back-slashes and handles platform quirks
+	// consistently — then strip any leading/trailing slash so it joins cleanly
+	// with the filename (and an empty/root setting normalizes to "").
+	const normalized = normalizePath(folderSetting.trim());
+	return normalized.replace(/^\/+/, "").replace(/\/+$/, "");
 }
 
 /**

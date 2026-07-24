@@ -9,10 +9,10 @@ import process from "process";
  * again (the root cause of the mobile layout "fixes not taking effect").
  *
  * Usage:
- *   COVER_SEARCH_PLUGIN_DIR="<vault>/.obsidian/plugins/cover-search" npm run deploy
+ *   COVER_SEARCH_PLUGIN_DIR="<vault>/.obsidian/plugins/get-covers" npm run deploy
  *
  * On Windows PowerShell:
- *   $env:COVER_SEARCH_PLUGIN_DIR="C:\path\to\vault\.obsidian\plugins\cover-search"; npm run deploy
+ *   $env:COVER_SEARCH_PLUGIN_DIR="C:\path\to\vault\.obsidian\plugins\get-covers"; npm run deploy
  */
 
 const target = process.env.COVER_SEARCH_PLUGIN_DIR;
@@ -20,7 +20,7 @@ const target = process.env.COVER_SEARCH_PLUGIN_DIR;
 if (!target) {
 	console.error(
 		"deploy: set COVER_SEARCH_PLUGIN_DIR to your vault's " +
-			".obsidian/plugins/cover-search folder first.",
+			".obsidian/plugins/get-covers folder first.",
 	);
 	process.exit(1);
 }

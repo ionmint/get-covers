@@ -1,5 +1,5 @@
 /**
- * Shared type definitions for the Cover Search plugin.
+ * Shared type definitions for the Get Covers plugin.
  * This file contains types and interfaces only — no runtime logic.
  */
 

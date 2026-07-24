@@ -1,7 +1,7 @@
-/* Cover Search — Modal styles */
+/* Get Covers — Modal styles */
 
 /* ---- Modal container sizing (responsive; never scrolls horizontally) ---- */
-.cover-search-modal-el {
+.get-covers-modal-el {
 	width: min(90vw, 900px);
 	max-width: 90vw;
 	height: min(85vh, 700px);
@@ -14,7 +14,7 @@
  * against the viewport so the bound holds even when Obsidian gives the modal an
  * auto height on mobile — otherwise the whole modal would scroll.
  */
-.cover-search-modal {
+.get-covers-modal {
 	/* Single source of truth for cell size/shape — tune the whole grid here.
 	   Cells are a FIXED width AND a FIXED height; they never resize with the
 	   window. The grid applies BOTH as fixed track sizes (grid-template-columns +
@@ -40,12 +40,12 @@
  * `.is-mobile .modal-content` (0,2,0) via later cascade — keeps contentEl a
  * non-scrolling, height-bounded flex column on mobile too.
  *
- * The shared header row (`.cover-search-mobile-header`, built in modal.ts) is the
+ * The shared header row (`.get-covers-mobile-header`, built in modal.ts) is the
  * first in-flow flex child, so `padding-top: 0` makes it flush with the top — no
  * reserved band above it. (The close button that core reserved that space for has
  * been moved down into the header, so the reservation is dead weight.)
  */
-.cover-search-modal.cover-search-mobile {
+.get-covers-modal.get-covers-mobile {
 	display: flex;
 	flex-direction: column;
 	box-sizing: border-box;
@@ -60,12 +60,12 @@
  * button on mobile. Zero it so the content — and thus the X/Refresh row — sits
  * flush at the top. Desktop is unaffected (rule is mobile-scoped).
  */
-.cover-search-modal-el.cover-search-mobile {
+.get-covers-modal-el.get-covers-mobile {
 	padding-top: 0;
 }
 
 /* ---- Toolbar: wrapping, left-aligned, labeled controls ---- */
-.cover-search-toolbar {
+.get-covers-toolbar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: flex-end;
@@ -75,60 +75,60 @@
 	width: 100%;
 }
 
-.cover-search-field {
+.get-covers-field {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 	min-width: 0;
 }
 
-.cover-search-field-search {
+.get-covers-field-search {
 	flex: 1 1 220px;
 	min-width: 180px;
 }
 
-.cover-search-field-mode {
+.get-covers-field-mode {
 	flex: 0 1 160px;
 	min-width: 130px;
 }
 
-.cover-search-field-suffix {
+.get-covers-field-suffix {
 	flex: 0 1 140px;
 	min-width: 110px;
 }
 
-.cover-search-field-destination {
+.get-covers-field-destination {
 	flex: 0 1 150px;
 	min-width: 120px;
 }
 
-.cover-search-field-refresh {
+.get-covers-field-refresh {
 	flex: 0 0 auto;
 }
 
-.cover-search-label {
+.get-covers-label {
 	font-size: var(--font-ui-smaller);
 	color: var(--text-muted);
 	min-height: 1em;
 }
 
 /* Controls: comfortable tap targets (>= 40px), full width of their field. */
-.cover-search-input,
-.cover-search-select,
-.cover-search-refresh {
+.get-covers-input,
+.get-covers-select,
+.get-covers-refresh {
 	width: 100%;
 	min-height: 40px;
 	box-sizing: border-box;
 }
 
-.cover-search-refresh {
+.get-covers-refresh {
 	min-width: 96px;
 	cursor: pointer;
 }
 
 /* Suffix is disabled in Database mode (applies to Google Images only). */
-.cover-search-input:disabled,
-.cover-search-input-disabled {
+.get-covers-input:disabled,
+.get-covers-input-disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
 }
@@ -136,7 +136,7 @@
 /* ---- Effective-query preview (shows the exact string sent to the provider) ---- */
 /* Wraps onto multiple lines so the full text is always visible — never
    truncated. (Previously white-space:nowrap + ellipsis cut it off on mobile.) */
-.cover-search-query-preview {
+.get-covers-query-preview {
 	flex: 0 0 auto;
 	padding: 2px 4px;
 	color: var(--text-muted);
@@ -145,7 +145,7 @@
 	overflow-wrap: anywhere;
 }
 
-.cover-search-query-preview code {
+.get-covers-query-preview code {
 	color: var(--text-normal);
 	overflow-wrap: anywhere;
 }
@@ -153,7 +153,7 @@
 /* ---- In-modal results-count control (status-line segment + popover) ---- */
 /* Inline, positioned wrapper so the popover anchors to the trigger wherever the
    wrapping status line places it. */
-.cover-search-count-control {
+.get-covers-count-control {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
@@ -161,7 +161,7 @@
 
 /* The clickable "N results ▾" segment. Reads as part of the muted status line but
    is an actual button (keyboard-activatable); padding gives it a tap target. */
-.cover-search-count-trigger {
+.get-covers-count-trigger {
 	display: inline-flex;
 	align-items: center;
 	min-height: 28px;
@@ -176,15 +176,15 @@
 	white-space: nowrap;
 }
 
-.cover-search-count-trigger:hover,
-.cover-search-count-trigger:focus-visible {
+.get-covers-count-trigger:hover,
+.get-covers-count-trigger:focus-visible {
 	border-color: var(--interactive-accent);
 	outline: none;
 }
 
 /* The popover: a small floating menu anchored below the trigger, above the grid.
    Its half-width children are centered so there's no lopsided dead space. */
-.cover-search-count-popover {
+.get-covers-count-popover {
 	position: absolute;
 	top: 100%;
 	left: 0;
@@ -204,7 +204,7 @@
 }
 
 /* Preset rows: HALF width and HALF height (was 100% / 40px), centered text. */
-.cover-search-count-option {
+.get-covers-count-option {
 	width: 50%;
 	min-height: 20px;
 	box-sizing: border-box;
@@ -217,20 +217,20 @@
 	cursor: pointer;
 }
 
-.cover-search-count-option:hover,
-.cover-search-count-option:focus-visible {
+.get-covers-count-option:hover,
+.get-covers-count-option:focus-visible {
 	border-color: var(--interactive-accent);
 	outline: none;
 }
 
-.cover-search-count-option.is-selected {
+.get-covers-count-option.is-selected {
 	background: var(--interactive-accent);
 	color: var(--text-on-accent);
 }
 
 /* Custom row: label + number input on one line. Full-width (definite basis so the
    input's 50% resolves) with its content centered. */
-.cover-search-count-custom {
+.get-covers-count-custom {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -239,14 +239,14 @@
 	padding-top: 2px;
 }
 
-.cover-search-count-custom-label {
+.get-covers-count-custom-label {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
 	flex: 0 0 auto;
 }
 
 /* Custom input: HALF width and HALF height (was flex-fill / 40px). */
-.cover-search-count-input {
+.get-covers-count-input {
 	flex: 0 0 auto;
 	width: 50%;
 	min-width: 0;
@@ -255,18 +255,18 @@
 	padding: 0 4px;
 }
 
-.cover-search-count-input.has-error {
+.get-covers-count-input.has-error {
 	border-color: var(--text-error);
 }
 
-.cover-search-count-error {
+.get-covers-count-error {
 	color: var(--text-error);
 	font-size: var(--font-ui-smaller);
 	line-height: 1.3;
 }
 
 /* ---- Loading indicator ---- */
-.cover-search-loading {
+.get-covers-loading {
 	flex: 0 0 auto;
 	padding: 4px 0;
 	text-align: center;
@@ -275,7 +275,7 @@
 }
 
 /* ---- Responsive image grid (the only scrolling region) ---- */
-.cover-search-grid {
+.get-covers-grid {
 	display: grid;
 	/* FIXED-width tracks (not 1fr): columns never stretch, so images keep a
 	   constant size. auto-fill packs as many as the width allows and wraps the
@@ -309,7 +309,7 @@
    single column on a narrow screen, at the same constant image size as desktop. */
 
 /* Each cell is a button so it is keyboard- and touch-accessible. */
-.cover-search-cell {
+.get-covers-cell {
 	display: block;
 	width: 100%;
 	padding: 0;
@@ -329,11 +329,11 @@
  * cell, which the grid pins to a fixed height via `grid-auto-rows` above — so
  * every cover is shown at full height and never squished. The <img> then fills
  * the frame and is cropped to fit with `object-fit: cover` (NOT `contain` — no
- * letterboxing). The rules stay scoped (`.cover-search-modal .cover-search-grid …`,
+ * letterboxing). The rules stay scoped (`.get-covers-modal .get-covers-grid …`,
  * specificity 0,3,0) so core/theme `.modal img` (0,1,1) or `.is-mobile .modal img`
  * (0,2,1) cannot reset the image's object-fit/position.
  */
-.cover-search-modal .cover-search-grid .cover-search-frame {
+.get-covers-modal .get-covers-grid .get-covers-frame {
 	position: relative;
 	width: 100%;
 	height: 100%;
@@ -341,7 +341,7 @@
 	background: var(--background-modifier-border);
 }
 
-.cover-search-modal .cover-search-grid .cover-search-thumb {
+.get-covers-modal .get-covers-grid .get-covers-thumb {
 	position: absolute;
 	inset: 0;
 	display: block;
@@ -351,15 +351,15 @@
 }
 
 /* Selection affordance that works on touch (active) as well as pointer. */
-.cover-search-cell:hover,
-.cover-search-cell:focus-visible,
-.cover-search-cell:active {
+.get-covers-cell:hover,
+.get-covers-cell:focus-visible,
+.get-covers-cell:active {
 	border-color: var(--interactive-accent);
 	transform: scale(1.02);
 	outline: none;
 }
 
-.cover-search-empty {
+.get-covers-empty {
 	grid-column: 1 / -1;
 	padding: 24px;
 	text-align: center;
@@ -367,7 +367,7 @@
 }
 
 /* ---- Settings: mapping list ---- */
-.cover-search-mapping-list .setting-item {
+.get-covers-mapping-list .setting-item {
 	border-top: none;
 	padding-top: 6px;
 	padding-bottom: 6px;
@@ -380,22 +380,22 @@
  * unchanged.
  */
 @media (max-width: 600px) {
-	.cover-search-field-refresh {
+	.get-covers-field-refresh {
 		flex: 1 0 100%; /* full-width own row, forcing a wrap before it */
 		align-items: flex-end; /* right-align the button on that row */
 	}
 
-	.cover-search-field-refresh .cover-search-label {
+	.get-covers-field-refresh .get-covers-label {
 		display: none; /* no empty label above the standalone button */
 	}
 
-	.cover-search-field-refresh .cover-search-refresh {
+	.get-covers-field-refresh .get-covers-refresh {
 		width: auto; /* intrinsic width, not full-row */
 	}
 }
 
 /*
- * ---- Mobile toolbar layout (Platform.isMobile → .cover-search-mobile) ----
+ * ---- Mobile toolbar layout (Platform.isMobile → .get-covers-mobile) ----
  * Desktop is untouched: every rule below is scoped to the mobile class.
  *
  *   [ X ] .................... [ Refresh ]   corner buttons in the header band
@@ -414,7 +414,7 @@
  * X left, Refresh right, both vertically centered. This container is created
  * only on mobile, so the desktop DOM and layout are untouched.
  */
-.cover-search-mobile-header {
+.get-covers-mobile-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -424,7 +424,7 @@
 }
 
 /* Undo core's absolute positioning so the moved X sits in the flex flow, left. */
-.cover-search-mobile-header .modal-close-button {
+.get-covers-mobile-header .modal-close-button {
 	position: static;
 	top: auto;
 	right: auto;
@@ -436,44 +436,44 @@
  * Refresh at the right end. Override the toolbar/media-query flex sizing (which
  * would otherwise stretch it to a full row) back to intrinsic width.
  */
-.cover-search-mobile-header .cover-search-field-refresh {
+.get-covers-mobile-header .get-covers-field-refresh {
 	position: static;
 	flex: 0 0 auto;
 	width: auto;
 	margin: 0;
 }
 
-.cover-search-mobile-header .cover-search-field-refresh .cover-search-label {
+.get-covers-mobile-header .get-covers-field-refresh .get-covers-label {
 	display: none;
 }
 
-.cover-search-mobile-header .cover-search-refresh {
+.get-covers-mobile-header .get-covers-refresh {
 	width: auto;
 	min-width: 88px; /* preserve touch target */
 	min-height: 40px;
 }
 
 /* Search and Suffix each keep their own full-width row. */
-.cover-search-mobile .cover-search-field-search,
-.cover-search-mobile .cover-search-field-suffix {
+.get-covers-mobile .get-covers-field-search,
+.get-covers-mobile .get-covers-field-suffix {
 	flex: 1 0 100%;
 }
 
 /* Mode and Destination share one row, splitting the width 50/50. */
-.cover-search-mobile .cover-search-field-mode,
-.cover-search-mobile .cover-search-field-destination {
+.get-covers-mobile .get-covers-field-mode,
+.get-covers-mobile .get-covers-field-destination {
 	flex: 1 1 0;
 	min-width: 0;
 }
 
 /*
  * The "N results ▾" count trigger renders too tall on mobile because Obsidian's
- * `.is-mobile button` (0,1,1) outranks the base `.cover-search-count-trigger`
+ * `.is-mobile button` (0,1,1) outranks the base `.get-covers-count-trigger`
  * (0,1,0) and forces a big button min-height/padding. Scope an override at 0,2,0
  * to win, trimming ONLY the vertical size (min-height + vertical padding) —
  * width, font, and horizontal padding are left untouched.
  */
-.cover-search-mobile .cover-search-count-trigger {
+.get-covers-mobile .get-covers-count-trigger {
 	min-height: 0;
 	height: auto;
 	padding-top: 1px;
@@ -487,7 +487,7 @@
  * overriding the halved base sizes. Re-assert the halved height AND width here at
  * 0,2,0 so the reduction holds on mobile too.
  */
-.cover-search-mobile .cover-search-count-option {
+.get-covers-mobile .get-covers-count-option {
 	width: 50%;
 	min-height: 20px;
 	height: auto;
@@ -495,7 +495,7 @@
 	line-height: 1.2;
 }
 
-.cover-search-mobile .cover-search-count-input {
+.get-covers-mobile .get-covers-count-input {
 	width: 50%;
 	min-height: 20px;
 	height: auto;

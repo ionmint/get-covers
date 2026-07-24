@@ -1,4 +1,4 @@
-# Cover Search
+# Get Covers
 
 An [Obsidian](https://obsidian.md) plugin that searches for a cover image for the note you're currently viewing and writes it to the note's `cover` frontmatter property. Works on **desktop, Android, and iOS** from a single codebase.
 
@@ -25,9 +25,9 @@ This plugin isn't in the community plugins list yet. To install manually:
 1. Download `main.js`, `manifest.json`, and `styles.css` from a release (or build them yourself — see [Building](#building)).
 2. Copy all three files into your vault at:
    ```
-   <your-vault>/.obsidian/plugins/cover-search/
+   <your-vault>/.obsidian/plugins/get-covers/
    ```
-3. In Obsidian, open **Settings → Community plugins**, enable **Cover Search**, and reload if prompted.
+3. In Obsidian, open **Settings → Community plugins**, enable **Get Covers**, and reload if prompted.
 
 > On mobile, Obsidian caches `styles.css` — after updating the files, **fully restart the app** so layout changes take effect.
 
@@ -159,7 +159,7 @@ That's it — the modal calls `provider.search()` automatically once the resolve
 
 ## Settings reference
 
-Open **Settings → Cover Search**.
+Open **Settings → Get Covers**.
 
 | Setting | Default | Description |
 | --- | --- | --- |
@@ -187,7 +187,7 @@ Open **Settings → Cover Search**.
 
 ## Getting API keys
 
-All keys are stored locally in your vault's `.obsidian/plugins/cover-search/data.json` and are never committed or sent anywhere except to the respective service. Enter them in **Settings → Cover Search → Provider API keys**.
+All keys are stored locally in your vault's `.obsidian/plugins/get-covers/data.json` and are never committed or sent anywhere except to the respective service. Enter them in **Settings → Get Covers → Provider API keys**.
 
 ### Google Books — *optional*
 
@@ -207,7 +207,7 @@ Free.
 3. Request an API key (choose “Developer”); accept the terms and fill in the short form.
 4. Copy the **“API Key (v3 auth)”** value into the “TMDb API key” field.
 
-Free.
+Free. _This product uses the TMDb API but is not endorsed or certified by TMDb._
 
 ### AniList (Anime & Manga) — *no key needed*
 
@@ -248,10 +248,10 @@ A helper script copies `main.js`, `manifest.json`, and `styles.css` together int
 
 ```bash
 # macOS / Linux
-COVER_SEARCH_PLUGIN_DIR="/path/to/vault/.obsidian/plugins/cover-search" npm run deploy
+COVER_SEARCH_PLUGIN_DIR="/path/to/vault/.obsidian/plugins/get-covers" npm run deploy
 
 # Windows (PowerShell)
-$env:COVER_SEARCH_PLUGIN_DIR="C:\path\to\vault\.obsidian\plugins\cover-search"; npm run deploy
+$env:COVER_SEARCH_PLUGIN_DIR="C:\path\to\vault\.obsidian\plugins\get-covers"; npm run deploy
 ```
 
 Or build and deploy in one step: `npm run build:deploy`.
@@ -293,6 +293,12 @@ The plugin is written to work identically across Obsidian Desktop, Android, and 
 - TypeScript runs in strict mode with **no `any`** anywhere (Obsidian's `response.json` is laundered to `unknown` and validated).
 
 > **Security note:** `data.json` holds your plugin settings, including any API keys you configure. It is git-ignored and must never be committed.
+
+## Credits & attribution
+
+- **This product uses the TMDb API but is not endorsed or certified by TMDb.** (Displayed as required by TMDb's terms of use.)
+- Cover images and metadata are provided by [Google Books](https://books.google.com), [TMDb](https://www.themoviedb.org), [AniList](https://anilist.co), [SteamGridDB](https://www.steamgriddb.com), and — in Google Images mode — [SerpAPI](https://serpapi.com). All trademarks, cover art, and images belong to their respective owners.
+- **Image licensing is your responsibility.** Search results, especially from Google Images, may be copyrighted. Make sure you have the right to download and use a cover before saving it into your vault.
 
 ## License
 

@@ -30,7 +30,7 @@ export class FrontmatterService {
 				frontmatter[propertyName] = value;
 			});
 		} catch (error) {
-			console.error("Cover Search: failed to write frontmatter", error);
+			console.error("Get Covers: failed to write frontmatter", error);
 			throw new Error("Couldn't update the note's frontmatter.");
 		}
 	}
