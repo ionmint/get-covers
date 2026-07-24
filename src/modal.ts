@@ -8,6 +8,7 @@ import {
 	SearchMode,
 } from "./types";
 import { resolveDatabaseProvider } from "./databaseResolver";
+import { GoogleImageProvider } from "./googleImageProvider";
 import {
 	ProviderError,
 	RateLimitError,
@@ -17,6 +18,9 @@ import {
 
 /** Callback invoked when the user picks a cover. */
 export type OnSelectCover = (result: CoverSearchResult) => void;
+
+/** Settings `apiKeys` key under which the SerpAPI (Google Images) key is stored. */
+const SERPAPI_KEY = "serpapi";
 
 function isSearchMode(value: string): value is SearchMode {
 	return value === "database" || value === "google";
@@ -68,6 +72,8 @@ export class CoverSearchModal extends Modal {
 	private queryPreviewEl: HTMLElement | null = null;
 	private searchInputEl: HTMLInputElement | null = null;
 	private suffixInputEl: HTMLInputElement | null = null;
+	/** The Mode dropdown, kept so automatic fallback can sync its value to this.mode. */
+	private modeSelectEl: HTMLSelectElement | null = null;
 	/** The Refresh toolbar field, kept so it can be relocated on mobile. */
 	private refreshFieldEl: HTMLElement | null = null;
 
@@ -233,13 +239,14 @@ export class CoverSearchModal extends Modal {
 		modeSelect.createEl("option", { value: "database", text: "Database" });
 		modeSelect.createEl("option", { value: "google", text: "Google Images" });
 		modeSelect.value = this.mode;
+		this.modeSelectEl = modeSelect;
 		modeSelect.addEventListener("change", () => {
 			if (isSearchMode(modeSelect.value)) {
-				this.mode = modeSelect.value; // per-search only; not persisted
-				// Suffix only applies to Google Images; gate it on the mode.
-				this.updateSuffixState();
-				// Keep the preview in sync without hitting the provider.
-				this.updateQueryPreview(this.getEffectiveQuery());
+				// setMode keeps the dropdown value + Suffix enabled-state in sync with
+				// this.mode; runSearch then recomputes the query variant for the NEW
+				// mode from the live Search field (dbQuery vs imageQuery).
+				this.setMode(modeSelect.value); // per-search only; not persisted
+				void this.runSearch();
 			}
 		});
 
@@ -289,6 +296,21 @@ export class CoverSearchModal extends Modal {
 	}
 
 	/**
+	 * The single entry point for EVERY Mode change — the dropdown's own change
+	 * event AND the automatic Database→Google-Images fallback both go through here.
+	 * It keeps three things in lockstep with `this.mode` on every path: the field's
+	 * value, the dropdown's displayed value, and the Suffix input's enabled state
+	 * (Suffix is editable only in Google Images mode). Callers re-run the search.
+	 */
+	private setMode(mode: SearchMode): void {
+		this.mode = mode;
+		if (this.modeSelectEl && this.modeSelectEl.value !== mode) {
+			this.modeSelectEl.value = mode;
+		}
+		this.updateSuffixState();
+	}
+
+	/**
 	 * The Database query: the Search field's raw contents, trimmed. Used whenever
 	 * Mode = Database. It never includes Type (routes separately) or the Suffix.
 	 */
@@ -298,10 +320,12 @@ export class CoverSearchModal extends Modal {
 
 	/**
 	 * The generic-image query: Search field contents + Type (if non-empty) +
-	 * Suffix (if non-empty), each separated by a single space. Used whenever
-	 * Mode = Google Images. Unlike structured providers, a Type word ("Book",
-	 * "Movie", …) genuinely biases a generic image search. Recomputed fresh on
-	 * every use from the live inputs, never cached from an earlier Mode.
+	 * Suffix (if non-empty), each separated by a single space. Used ONLY in Google
+	 * Images mode — so Type is folded into the query in that mode alone (a Type
+	 * word like "Game"/"Movie" genuinely biases a generic image search), while the
+	 * Database query never includes it. This is also the one query variant that
+	 * carries the Suffix. Recomputed fresh from the live inputs on every use, never
+	 * cached from an earlier Mode.
 	 */
 	private getImageQuery(): string {
 		const parts = [
@@ -574,27 +598,34 @@ export class CoverSearchModal extends Modal {
 			return;
 		}
 		const token = ++this.searchToken;
-		// Read the LIVE Search + Suffix inputs at this exact moment.
+
+		// Resolve the provider FIRST: in Database mode this may auto-switch Mode to
+		// Google Images (fallback), which changes WHICH query variant applies. Only
+		// after resolution do we compute the query, so it always matches the FINAL
+		// mode — never a variant left over from before the switch.
+		const provider = this.resolveProviderForCurrentMode();
+
+		// Recompute for the (possibly just-changed) mode and show it.
 		const query = this.getEffectiveQuery();
 		this.updateQueryPreview(query);
+
+		if (provider === null) {
+			// resolveProviderForCurrentMode already rendered an explanation.
+			this.setLoading(false);
+			return;
+		}
+		if (query.length === 0) {
+			this.setLoading(false);
+			this.renderEmptyState("Type something to search for a cover.");
+			return;
+		}
+
 		this.setLoading(true);
 		this.gridEl.empty();
-
 		try {
-			// Pick the provider from the current Mode + Type routing. When none
-			// applies, resolveActiveProvider has already rendered an explanatory
-			// message into the grid, so just stop.
-			const provider = this.resolveActiveProvider();
-			if (provider === null) {
-				return;
-			}
-			if (query.length === 0) {
-				this.renderEmptyState("Type something to search for a cover.");
-				return;
-			}
 			// Only thumbnails are fetched here; the full-resolution URL is not
-			// requested until the user selects a result (see handleSelect).
-			// The count is the session override when set, else the settings default.
+			// requested until the user selects a result (see handleSelect). The
+			// count is the session override when set, else the settings default.
 			const results = await provider.search(query, {
 				maxResults: this.getEffectiveMaxResults(),
 				timeoutMs: this.settings.requestTimeout,
@@ -620,19 +651,22 @@ export class CoverSearchModal extends Modal {
 	}
 
 	/**
-	 * Choose the provider for the current search from the Mode and the note's
-	 * Type routing. Returns `null` when no real provider applies — in which case
-	 * this method renders a short, user-facing explanation into the grid itself
-	 * (Google Images is not implemented in this phase).
+	 * Choose the provider for the current Mode.
+	 *
+	 * - Google Images mode → the SerpAPI provider (or null + message if no key).
+	 * - Database mode → the Type→Category routing. If that yields no usable
+	 *   provider (unmapped Type, or a key-requiring provider with no key), this
+	 *   AUTOMATICALLY switches the UI to Google Images — updating the dropdown and
+	 *   enabling Suffix via setMode — shows a Notice explaining why, and resolves
+	 *   the image provider instead.
+	 *
+	 * Returns null when nothing can run, after rendering an explanation into the
+	 * grid. Note: after a fallback, `this.mode` is "google", so the caller must
+	 * recompute the query variant (it does).
 	 */
-	private resolveActiveProvider(): CoverProvider | null {
+	private resolveProviderForCurrentMode(): CoverProvider | null {
 		if (this.mode === "google") {
-			this.renderEmptyState(
-				"Google Images search isn't available yet. Switch Mode to " +
-					"Database and give the note a supported Type (e.g. Book) to " +
-					"search Google Books.",
-			);
-			return null;
+			return this.resolveGoogleImageProvider();
 		}
 
 		const resolution = resolveDatabaseProvider(
@@ -644,12 +678,28 @@ export class CoverSearchModal extends Modal {
 			return resolution.provider;
 		}
 
-		// A fallback to Google Images was signalled, but Google Images isn't
-		// implemented yet — surface why so the user knows what to change.
-		this.renderEmptyState(
-			`${resolution.reason} Google Images fallback isn't available yet.`,
-		);
-		return null;
+		// Automatic fallback: no usable Database provider for this note. Explain why,
+		// flip the UI to Google Images (setMode also enables the Suffix input), and
+		// resolve the image provider instead.
+		new Notice(`Cover Search: ${resolution.reason} Falling back to Google Images.`);
+		this.setMode("google");
+		return this.resolveGoogleImageProvider();
+	}
+
+	/**
+	 * Build the SerpAPI-backed Google Images provider from settings, or render an
+	 * explanation and return null when no SerpAPI key is configured.
+	 */
+	private resolveGoogleImageProvider(): CoverProvider | null {
+		const apiKey = this.settings.apiKeys[SERPAPI_KEY]?.trim();
+		if (!apiKey) {
+			this.renderEmptyState(
+				"Google Images needs a SerpAPI key — add one in the plugin " +
+					"settings (Provider API keys → SerpAPI).",
+			);
+			return null;
+		}
+		return new GoogleImageProvider(apiKey);
 	}
 
 	/**
@@ -661,7 +711,7 @@ export class CoverSearchModal extends Modal {
 			return "Rate limited — check your API key or try again shortly.";
 		}
 		if (error instanceof ServiceUnavailableError) {
-			return "Google Books is temporarily unavailable. Try again in a moment.";
+			return "The service is temporarily unavailable. Try again in a moment.";
 		}
 		if (error instanceof TimeoutError) {
 			return "Request timed out.";

@@ -328,6 +328,16 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 			keyId: "steamgriddb",
 			placeholder: "SteamGridDB API key",
 		});
+
+		this.addApiKeyField(containerEl, {
+			name: "SerpAPI key (required for Google Images)",
+			desc:
+				"SerpAPI key. Required for Google Images mode — used both when you " +
+				"pick Mode: Google Images and when a note's Type has no mapped " +
+				"provider and falls back to it.",
+			keyId: "serpapi",
+			placeholder: "SerpAPI key",
+		});
 	}
 
 	/**
