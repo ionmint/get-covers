@@ -1,12 +1,13 @@
-import { requestUrl, RequestUrlParam, RequestUrlResponse } from "obsidian";
+import { RequestUrlParam } from "obsidian";
 import { CoverProvider, CoverSearchOptions, CoverSearchResult } from "../types";
 import { withRetry } from "../utils";
 import {
-	ProviderError,
-	RateLimitError,
-	ServiceUnavailableError,
-	isTransientError,
-} from "../errors";
+	asRecord,
+	asString,
+	clamp,
+	requestOnce,
+	retryOptions,
+} from "./providerHttp";
 
 /**
  * The zoom level requested for the "full-resolution" cover.
@@ -24,13 +25,6 @@ const FULL_RES_ZOOM = 3;
 
 /** Google Books rejects `maxResults` above 40. */
 const GOOGLE_BOOKS_MAX_RESULTS = 40;
-
-/**
- * Transient-failure retry policy (429/503). Up to 2 retries (3 attempts) with
- * exponential backoff, all bounded by the caller's timeout — see withRetry.
- */
-const MAX_RETRIES = 2;
-const BASE_RETRY_DELAY_MS = 500;
 
 const ENDPOINT = "https://www.googleapis.com/books/v1/volumes";
 
@@ -61,55 +55,19 @@ export class GoogleBooksProvider implements CoverProvider {
 		const param: RequestUrlParam = {
 			url: this.buildUrl(trimmed, opts.maxResults),
 			method: "GET",
-			// Do NOT let requestUrl throw on HTTP errors: we inspect the status
-			// code ourselves to raise a precise typed error (429 vs 503 vs other).
-			throw: false,
 		};
 
 		// Retry transient 429/503 with exponential backoff, all within the
-		// caller's total time budget. The retry/backoff/timeout logic lives
-		// entirely in withRetry, so future providers reuse it unchanged.
-		const response = await withRetry(() => this.requestOnce(param), {
-			retries: MAX_RETRIES,
-			baseDelayMs: BASE_RETRY_DELAY_MS,
-			timeoutMs: opts.timeoutMs,
-			isRetryable: isTransientError,
-		});
+		// caller's total time budget (see providerHttp / withRetry).
+		const response = await withRetry(
+			() => requestOnce(param),
+			retryOptions(opts.timeoutMs),
+		);
 
 		// `response.json` is typed `any` by Obsidian; launder it to `unknown` and
 		// validate the shape ourselves so no `any` leaks into our code.
 		const json: unknown = response.json;
 		return parseVolumes(json);
-	}
-
-	/**
-	 * Perform ONE HTTP request and translate the outcome into a typed error when
-	 * it isn't a success:
-	 *   429 → RateLimitError, 503 → ServiceUnavailableError (both retryable),
-	 *   any other non-2xx → ProviderError(status), network failure → ProviderError.
-	 */
-	private async requestOnce(
-		param: RequestUrlParam,
-	): Promise<RequestUrlResponse> {
-		let response: RequestUrlResponse;
-		try {
-			response = await requestUrl(param);
-		} catch (error) {
-			// No HTTP response at all (DNS, offline, connection reset, …).
-			throw new ProviderError(undefined, `Network error: ${errorMessage(error)}`);
-		}
-
-		const status = response.status;
-		if (status === 429) {
-			throw new RateLimitError();
-		}
-		if (status === 503) {
-			throw new ServiceUnavailableError();
-		}
-		if (status < 200 || status >= 300) {
-			throw new ProviderError(status);
-		}
-		return response;
 	}
 
 	private buildUrl(query: string, maxResults: number): string {
@@ -125,10 +83,6 @@ export class GoogleBooksProvider implements CoverProvider {
 		}
 		return `${ENDPOINT}?${params.toString()}`;
 	}
-}
-
-function clamp(value: number, min: number, max: number): number {
-	return Math.min(Math.max(Math.floor(value), min), max);
 }
 
 /** Parse the Google Books `volumes` response into cover results (no `any`). */
@@ -185,18 +139,4 @@ function upgradeToHttps(url: string): string {
 	return url.startsWith("http://")
 		? `https://${url.slice("http://".length)}`
 		: url;
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-	return typeof value === "object" && value !== null
-		? (value as Record<string, unknown>)
-		: null;
-}
-
-function asString(value: unknown): string | null {
-	return typeof value === "string" ? value : null;
-}
-
-function errorMessage(error: unknown): string {
-	return error instanceof Error ? error.message : String(error);
 }

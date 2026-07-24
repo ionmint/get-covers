@@ -283,29 +283,79 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 					});
 			});
 
-		new Setting(containerEl)
-			.setName("Google Books API key (optional)")
-			.setDesc(
+		this.renderApiKeys(containerEl);
+
+		this.renderTypeMappings(containerEl);
+	}
+
+	/**
+	 * Provider API keys, grouped together. Only providers that need credentials
+	 * get a field: Google Books' key is optional (quota only), TMDb and
+	 * SteamGridDB require one, and AniList needs none (so it has no field).
+	 */
+	private renderApiKeys(containerEl: HTMLElement): void {
+		containerEl.createEl("h3", { text: "Provider API keys" });
+		containerEl.createEl("p", {
+			text:
+				"Stored locally with this vault and never committed. AniList " +
+				"(Anime & Manga) needs no key.",
+			cls: "setting-item-description",
+		});
+
+		this.addApiKeyField(containerEl, {
+			name: "Google Books API key (optional)",
+			desc:
 				"Optional. Raises the Google Books request quota. Basic cover " +
-					"search works without a key.",
-			)
+				"search (Books) works without a key.",
+			keyId: "googleBooks",
+			placeholder: "Leave empty to use the free quota",
+		});
+
+		this.addApiKeyField(containerEl, {
+			name: "TMDb API key (required for Movies & TV Shows)",
+			desc:
+				"The Movie Database (TMDb) v3 API key. Required to search covers " +
+				"for the Movies and TV Shows categories.",
+			keyId: "tmdb",
+			placeholder: "TMDb v3 API key",
+		});
+
+		this.addApiKeyField(containerEl, {
+			name: "SteamGridDB API key (required for Games)",
+			desc:
+				"SteamGridDB API key. Required to search covers for the Games " +
+				"category.",
+			keyId: "steamgriddb",
+			placeholder: "SteamGridDB API key",
+		});
+	}
+
+	/**
+	 * Render one password-masked API-key field bound to `apiKeys[keyId]`. Writing
+	 * a blank value deletes the key rather than storing an empty string.
+	 */
+	private addApiKeyField(
+		containerEl: HTMLElement,
+		opts: { name: string; desc: string; keyId: string; placeholder: string },
+	): void {
+		new Setting(containerEl)
+			.setName(opts.name)
+			.setDesc(opts.desc)
 			.addText((text) => {
 				text.inputEl.type = "password";
 				text
-					.setPlaceholder("Leave empty to use the free quota")
-					.setValue(this.plugin.settings.apiKeys.googleBooks ?? "")
+					.setPlaceholder(opts.placeholder)
+					.setValue(this.plugin.settings.apiKeys[opts.keyId] ?? "")
 					.onChange(async (value) => {
 						const trimmed = value.trim();
 						if (trimmed.length > 0) {
-							this.plugin.settings.apiKeys.googleBooks = trimmed;
+							this.plugin.settings.apiKeys[opts.keyId] = trimmed;
 						} else {
-							delete this.plugin.settings.apiKeys.googleBooks;
+							delete this.plugin.settings.apiKeys[opts.keyId];
 						}
 						await this.plugin.saveSettings();
 					});
 			});
-
-		this.renderTypeMappings(containerEl);
 	}
 
 	private renderTypeMappings(containerEl: HTMLElement): void {

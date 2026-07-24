@@ -395,8 +395,7 @@ export class CoverSearchModal extends Modal {
 		// A fallback to Google Images was signalled, but Google Images isn't
 		// implemented yet — surface why so the user knows what to change.
 		this.renderEmptyState(
-			`${resolution.reason} Google Images fallback isn't available yet — ` +
-				"only Books (Google Books) is wired so far.",
+			`${resolution.reason} Google Images fallback isn't available yet.`,
 		);
 		return null;
 	}
