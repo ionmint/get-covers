@@ -4,7 +4,7 @@ Note: Every line except this one was written by the AI. Enjoy.
 
 # Get Covers
 
-An [Obsidian](https://obsidian.md) plugin that searches for a cover image for the note you're currently viewing and writes it to the note's `cover` frontmatter property. Works on **desktop, Android, and iOS** from a single codebase.
+A minimal and simple [Obsidian](https://obsidian.md) plugin that searches for a cover image for the note you're currently viewing and writes it to the note's `cover` frontmatter property. Works on **desktop, Android, and iOS** from a single codebase.
 
 Pick a note, search a structured database (Google Books, TMDb, AniList, SteamGridDB) or Google Images, tap a result, and the cover is either downloaded into your vault or its URL is written to frontmatter.
 
