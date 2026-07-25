@@ -1,45 +1,33 @@
 Note: Every line except this one was written by the AI. Enjoy.
 
 ---
+## Showcase
 
-# Get Covers
+<p align="center"><em>Mode: Google Images - Destination: URL - Results: 8 </em></p>
+<p align="center">
+  <img width="80%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1404ad94-e95f-4693-8d2b-ce3c1026c991" />
+</p>
+
+<p align="center"><em>Mode: Database - Destination: Download - Results: 6 </em></p>
+<p align="center">
+  <img width="80%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1541f169-460f-45f8-a8e0-2d12a7e84e29" />
+</p>
+
+
+<details>
+<summary><strong> Settings </strong></summary>
+<br />
+<p align="center">
+  <img width="80%" height="auto" alt="Screenshot 2026-07-25 131336" src="https://github.com/user-attachments/assets/dbfeb656-2be5-467b-bdd8-946461020d95" />
+  <img width="80%" height="auto" alt="Screenshot 2026-07-25 131352" src="https://github.com/user-attachments/assets/e5dbb269-28c4-4c88-b13d-55e53fa05684" />
+</p>
+</details>
+
+---
+
+## Get Covers
 
 A minimal and simple [Obsidian](https://obsidian.md) plugin that searches for a cover image for the note you're currently viewing and writes it to the note's `cover` frontmatter property. Works on **desktop, Android, and iOS** from a single codebase.
-
-Pick a note, search a structured database (Google Books, TMDb, AniList, SteamGridDB) or Google Images, tap a result, and the cover is either downloaded into your vault or its URL is written to frontmatter.
-
-## Features
-
-
-<img width="49%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1404ad94-e95f-4693-8d2b-ce3c1026c991" />
-<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1541f169-460f-45f8-a8e0-2d12a7e84e29" />
-
-
-
-- **Find a cover for the current note** from the command palette, the ribbon icon, or the file context menu (“Search Cover”).
-- **Touch-friendly image grid** — a responsive gallery of fixed-size poster-ratio results with a dedicated mobile layout; only the grid scrolls.
-- **Two search modes**
-  - **Database** — structured lookup by title. The note's `Type` routes it to the right category and provider.
-  - **Google Images** — a generic image search (via SerpAPI) that also folds in the note's `Type` and a customizable **Suffix** (default: `cover`).
-- **Automatic fallback** — if a note's `Type` isn't mapped to a category, or a required API key is missing, the modal automatically switches to Google Images and tells you why.
-- **In-modal result count** — click the “N results ▾” chip in the status line to change how many results this search returns (2 / 4 / 8 / custom), without touching settings.
-- **Two destinations for the chosen cover**
-  - **Download** — save the full-resolution image into your vault (default folder `Assets/Covers/`) and write that path to frontmatter.
-  - **URL** — write the remote full-resolution URL directly to frontmatter (no download).
-- **Frontmatter-safe** — covers are written with Obsidian's own `processFrontMatter` API, so your other properties are preserved.
-
-## Installation
-
-This plugin isn't in the community plugins list yet. To install manually:
-
-1. Download `main.js`, `manifest.json`, and `styles.css` from a release (or build them yourself — see [Building](#building)).
-2. Copy all three files into your vault at:
-   ```
-   <your-vault>/.obsidian/plugins/get-covers/
-   ```
-3. In Obsidian, open **Settings → Community plugins**, enable **Get Covers**, and reload if prompted.
-
-> On mobile, Obsidian caches `styles.css` — after updating the files, **fully restart the app** so layout changes take effect.
 
 ## Usage
 
@@ -47,6 +35,93 @@ This plugin isn't in the community plugins list yet. To install manually:
 2. Trigger a search via any of: the **ribbon** image icon, the command palette → **“Search Cover”**, or right-clicking a note → **“Search Cover”**.
 3. The modal opens pre-filled with the note's title. Adjust **Search**, **Suffix** (Google Images only), **Mode**, **Destination**, and the result **count**, then tap **Refresh** to re-run.
 4. Tap a result. The cover is downloaded (or its URL is stored) and written to the note's configured frontmatter property; the modal closes only after the write succeeds. If anything fails, an error notice appears and the modal stays open so you don't lose your search.
+
+## Features
+
+- **Two search modes**
+  - **Database** — structured lookup by title. The note's `Type` routes it to the right category and provider.
+  - **Google Images** — a generic image search (via SerpAPI) that also folds in the note's `Type` and a customizable **Suffix** (default: `cover`).
+- **Automatic fallback** — if a note's `Type` isn't mapped to a category, or a required API key is missing, the modal automatically switches to Google Images and tells you why.
+- **Two destinations for the chosen cover**
+  - **Download** — save the full-resolution image into your vault (default folder `Assets/Covers/`) and write that path to frontmatter.
+  - **URL** — write the remote full-resolution URL directly to frontmatter (no download).
+- **Touch-friendly image grid** — a responsive gallery of fixed-size poster-ratio results with a dedicated mobile layout.
+- **In-modal result count** — click the “N results ▾” chip in the status line to change how many results this search returns (2 / 4 / 8 / custom), without touching settings.
+- **Frontmatter-safe** — covers are written with Obsidian's own `processFrontMatter` API, so your other properties are preserved.
+
+## Getting API keys
+
+All keys are stored locally in your vault's `.obsidian/plugins/get-covers/data.json` and are never committed or sent anywhere except to the respective service. Enter them in **Settings → Get Covers → Provider API keys**.
+
+### Google Books — *optional*
+
+Basic Books search works with **no key**. Add one only if you hit rate limits:
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create (or pick) a project.
+2. **APIs & Services → Library → Books API → Enable.**
+3. **APIs & Services → Credentials → Create credentials → API key.**
+4. Copy the key into the “Google Books API key (optional)” field.
+
+Free.
+
+### TMDb (Movies & TV Shows) — *required for those categories*
+
+1. Create a free account at [themoviedb.org](https://www.themoviedb.org/signup).
+2. Go to **Settings → API** (`https://www.themoviedb.org/settings/api`).
+3. Request an API key (choose “Developer”); accept the terms and fill in the short form.
+4. Copy the **“API Key (v3 auth)”** value into the “TMDb API key” field.
+
+Free. _This product uses the TMDb API but is not endorsed or certified by TMDb._
+
+### AniList (Anime & Manga) — *no key needed*
+
+AniList's public GraphQL API needs no key for search. There's intentionally no field for it in settings.
+
+### SteamGridDB (Games) — *required*
+
+1. Sign in at [steamgriddb.com](https://www.steamgriddb.com/) (you can use your Steam account).
+2. Open your profile **Preferences → API** (`https://www.steamgriddb.com/profile/preferences/api`).
+3. Click **Generate API Key** and copy it into the “SteamGridDB API key” field.
+
+Free.
+
+### SerpAPI (Google Images) — *required for Google Images mode & fallback*
+
+1. Sign up at [serpapi.com](https://serpapi.com/users/sign_up).
+2. Open your [dashboard](https://serpapi.com/manage-api-key) and copy **“Your Private API Key”**.
+3. Paste it into the “SerpAPI key” field.
+
+Free tier: ~100 searches/month at time of writing. Google publishes no official image API, so this plugin uses SerpAPI (an API, not scraping) to keep the feature reliable and mobile-safe.
+
+## Settings reference
+
+Open **Settings → Get Covers**.
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| Download folder | `Assets/Covers/` | Vault-relative folder where downloaded covers are stored. |
+| Destination property | `cover` | Frontmatter property the chosen cover is written to. |
+| Type property | `Type` | Frontmatter property read to determine a note's Type. |
+| Max results | `6` | Default number of results requested/shown (overridable per-search in the modal). |
+| Request timeout (ms) | `10000` | Total network time budget per search, including retries. |
+| Default search mode | `database` | Mode the modal opens with (`database` or `google`). |
+| Default destination | `download` | Destination the modal opens with (`download` or `url`). |
+| **Provider API keys** | — | See [API keys](#getting-api-keys) below. |
+| Type → Category mapping | (see below) | Maps your `Type` values to the six built-in categories. |
+
+**Default Type → Category mappings:** `Book → Books`, `Movie → Movies`, `TV Show → TV Shows`, `Series → TV Shows`, `Anime → Anime`, `Manga → Manga`, `Game → Games`. Matching is case-insensitive and trimmed.
+
+**Which provider serves which category:**
+
+| Category | Provider | API key |
+| --- | --- | --- |
+| Books | Google Books | Optional (higher quota) |
+| Movies, TV Shows | TMDb | **Required** |
+| Anime, Manga | AniList | None |
+| Games | SteamGridDB | **Required** |
+| Google Images (fallback / manual) | SerpAPI | **Required** |
+
+---
 
 ## Architecture
 
@@ -167,77 +242,6 @@ To add, say, an OpenLibrary provider:
 
 That's it — the modal calls `provider.search()` automatically once the resolver returns your provider; no modal changes are needed.
 
-## Settings reference
-
-Open **Settings → Get Covers**.
-
-| Setting | Default | Description |
-| --- | --- | --- |
-| Download folder | `Assets/Covers/` | Vault-relative folder where downloaded covers are stored. |
-| Destination property | `cover` | Frontmatter property the chosen cover is written to. |
-| Type property | `Type` | Frontmatter property read to determine a note's Type. |
-| Max results | `6` | Default number of results requested/shown (overridable per-search in the modal). |
-| Request timeout (ms) | `10000` | Total network time budget per search, including retries. |
-| Default search mode | `database` | Mode the modal opens with (`database` or `google`). |
-| Default destination | `download` | Destination the modal opens with (`download` or `url`). |
-| **Provider API keys** | — | See [API keys](#getting-api-keys) below. |
-| Type → Category mapping | (see below) | Maps your `Type` values to the six built-in categories. |
-
-**Default Type → Category mappings:** `Book → Books`, `Movie → Movies`, `TV Show → TV Shows`, `Series → TV Shows`, `Anime → Anime`, `Manga → Manga`, `Game → Games`. Matching is case-insensitive and trimmed.
-
-**Which provider serves which category:**
-
-| Category | Provider | API key |
-| --- | --- | --- |
-| Books | Google Books | Optional (higher quota) |
-| Movies, TV Shows | TMDb | **Required** |
-| Anime, Manga | AniList | None |
-| Games | SteamGridDB | **Required** |
-| Google Images (fallback / manual) | SerpAPI | **Required** |
-
-## Getting API keys
-
-All keys are stored locally in your vault's `.obsidian/plugins/get-covers/data.json` and are never committed or sent anywhere except to the respective service. Enter them in **Settings → Get Covers → Provider API keys**.
-
-### Google Books — *optional*
-
-Basic Books search works with **no key**. Add one only if you hit rate limits:
-
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create (or pick) a project.
-2. **APIs & Services → Library → Books API → Enable.**
-3. **APIs & Services → Credentials → Create credentials → API key.**
-4. Copy the key into the “Google Books API key (optional)” field.
-
-Free.
-
-### TMDb (Movies & TV Shows) — *required for those categories*
-
-1. Create a free account at [themoviedb.org](https://www.themoviedb.org/signup).
-2. Go to **Settings → API** (`https://www.themoviedb.org/settings/api`).
-3. Request an API key (choose “Developer”); accept the terms and fill in the short form.
-4. Copy the **“API Key (v3 auth)”** value into the “TMDb API key” field.
-
-Free. _This product uses the TMDb API but is not endorsed or certified by TMDb._
-
-### AniList (Anime & Manga) — *no key needed*
-
-AniList's public GraphQL API needs no key for search. There's intentionally no field for it in settings.
-
-### SteamGridDB (Games) — *required*
-
-1. Sign in at [steamgriddb.com](https://www.steamgriddb.com/) (you can use your Steam account).
-2. Open your profile **Preferences → API** (`https://www.steamgriddb.com/profile/preferences/api`).
-3. Click **Generate API Key** and copy it into the “SteamGridDB API key” field.
-
-Free.
-
-### SerpAPI (Google Images) — *required for Google Images mode & fallback*
-
-1. Sign up at [serpapi.com](https://serpapi.com/users/sign_up).
-2. Open your [dashboard](https://serpapi.com/manage-api-key) and copy **“Your Private API Key”**.
-3. Paste it into the “SerpAPI key” field.
-
-Free tier: ~100 searches/month at time of writing. Google publishes no official image API, so this plugin uses SerpAPI (an API, not scraping) to keep the feature reliable and mobile-safe.
 
 ## Building
 
