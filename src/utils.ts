@@ -91,8 +91,8 @@ export interface RetryOptions {
  *   {@link TimeoutError} is thrown. If the next backoff would spill past the
  *   budget, the LAST error is propagated instead of starting another attempt.
  *
- * Fully generic and provider-agnostic: any provider (Google Books today; TMDb,
- * AniList, SteamGridDB later) reuses it by throwing errors that report
+ * Fully generic and provider-agnostic: any provider (TMDb, AniList, SteamGridDB,
+ * Open Library, …) reuses it by throwing errors that report
  * themselves as retryable — no backoff/timeout logic is duplicated per provider.
  */
 export async function withRetry<T>(

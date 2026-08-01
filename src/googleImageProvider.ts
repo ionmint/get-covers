@@ -3,6 +3,7 @@ import { CoverProvider, CoverSearchOptions, CoverSearchResult } from "./types";
 import { withRetry } from "./utils";
 import {
 	asArray,
+	asNumber,
 	asRecord,
 	asString,
 	requestOnce,
@@ -116,4 +117,49 @@ function parseImages(json: unknown, maxResults: number): CoverSearchResult[] {
 		}
 	}
 	return results;
+}
+
+const ACCOUNT_ENDPOINT = "https://serpapi.com/account.json";
+
+/** Live account usage for a SerpAPI key (read from the free account endpoint). */
+export interface SerpApiUsage {
+	/** Searches used so far in the current billing month. */
+	thisMonthUsage: number;
+	/** Total searches included per month on the plan. */
+	searchesPerMonth: number;
+	/** Searches remaining this month. */
+	searchesLeft: number;
+}
+
+/**
+ * Fetch a SerpAPI key's current usage from `account.json`. This endpoint is free
+ * and does NOT consume the search quota. Routed through `requestOnce` (so it uses
+ * Obsidian's `requestUrl` and works on mobile, with typed errors). Throws on a
+ * blank key or a response missing the expected numeric fields.
+ */
+export async function fetchSerpApiUsage(apiKey: string): Promise<SerpApiUsage> {
+	const key = apiKey.trim();
+	if (key.length === 0) {
+		throw new Error("A SerpAPI key is required to check usage.");
+	}
+
+	const params = new URLSearchParams();
+	params.set("api_key", key);
+	const response = await requestOnce({
+		url: `${ACCOUNT_ENDPOINT}?${params.toString()}`,
+		method: "GET",
+	});
+
+	const root = asRecord(response.json as unknown);
+	const thisMonthUsage = asNumber(root?.this_month_usage);
+	const searchesPerMonth = asNumber(root?.searches_per_month);
+	const searchesLeft = asNumber(root?.plan_searches_left);
+	if (
+		thisMonthUsage === null ||
+		searchesPerMonth === null ||
+		searchesLeft === null
+	) {
+		throw new Error("SerpAPI returned an unexpected account response.");
+	}
+	return { thisMonthUsage, searchesPerMonth, searchesLeft };
 }

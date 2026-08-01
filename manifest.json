@@ -1,7 +1,7 @@
 {
 	"id": "get-covers",
 	"name": "Get Covers",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"minAppVersion": "1.4.4",
 	"description": "Search for a cover image for the current note and assign it to the note's cover frontmatter property.",
 	"author": "ionmint",

@@ -42,8 +42,8 @@ const COUNT_PRESETS: readonly number[] = [2, 4, 8];
 
 /**
  * Upper bound accepted for a custom result count. Matches the practical ceiling
- * the providers honor (AniList caps a page at 50; Google Books clamps its own to
- * 40), so a larger value is rejected outright rather than silently clamped.
+ * the providers honor (AniList caps a page at 50), so a larger value is rejected
+ * outright rather than silently clamped.
  */
 const MAX_RESULTS_CAP = 50;
 
@@ -111,6 +111,13 @@ export class CoverSearchModal extends Modal {
 	private countPopoverEl: HTMLElement | null = null;
 	private countCustomInputEl: HTMLInputElement | null = null;
 	private countErrorEl: HTMLElement | null = null;
+
+	/**
+	 * The id of the provider resolved for the current search, or null. Used to
+	 * apply that provider's per-provider default result count (see
+	 * getEffectiveMaxResults). Set at the top of runSearch after resolution.
+	 */
+	private activeProviderId: string | null = null;
 
 	constructor(
 		app: App,
@@ -384,8 +391,16 @@ export class CoverSearchModal extends Modal {
 	 * `settings.maxResults` directly.
 	 */
 	private getEffectiveMaxResults(): number {
+		// Precedence: in-modal popover override (session) > the active provider's
+		// per-provider default > the global Max results setting.
 		if (this.resultCountOverride !== null) {
 			return this.resultCountOverride;
+		}
+		const perProvider = this.activeProviderId
+			? this.settings.providerResultLimits[this.activeProviderId]
+			: undefined;
+		if (typeof perProvider === "number" && perProvider >= 1) {
+			return perProvider;
 		}
 		return Math.max(1, this.settings.maxResults);
 	}
@@ -618,6 +633,9 @@ export class CoverSearchModal extends Modal {
 		// after resolution do we compute the query, so it always matches the FINAL
 		// mode — never a variant left over from before the switch.
 		const provider = this.resolveProviderForCurrentMode();
+		// Track which provider this search targets so the effective result count
+		// (and the count trigger) can honor that provider's default.
+		this.activeProviderId = provider?.id ?? null;
 
 		// Recompute for the (possibly just-changed) mode and show it.
 		const query = this.getEffectiveQuery();

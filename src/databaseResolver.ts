@@ -1,5 +1,5 @@
 import { Category, CoverProvider, TypeMapping } from "./types";
-import { GoogleBooksProvider } from "./providers/googleBooksProvider";
+import { OpenLibraryProvider } from "./providers/openLibraryProvider";
 import { TmdbProvider } from "./providers/tmdbProvider";
 import { AniListProvider } from "./providers/anilistProvider";
 import { SteamGridDbProvider } from "./providers/steamgriddbProvider";
@@ -8,7 +8,6 @@ import { SteamGridDbProvider } from "./providers/steamgriddbProvider";
  * Settings `apiKeys` keys under which each provider's key is stored. These match
  * the provider `id` values and the keys written by the settings tab.
  */
-const GOOGLE_BOOKS_KEY = "googleBooks";
 const TMDB_KEY = "tmdb";
 const STEAMGRIDDB_KEY = "steamgriddb";
 
@@ -61,7 +60,7 @@ export function resolveCategory(
 
 /**
  * Resolve a `Category` to a concrete provider. Every category is now wired:
- *   Books → Google Books (optional key), Movies/TV Shows → TMDb (key required),
+ *   Books → Open Library (no key), Movies/TV Shows → TMDb (key required),
  *   Anime/Manga → AniList (no key), Games → SteamGridDB (key required).
  * Providers that require a key but have none configured resolve to a `reason`
  * so the caller can fall back gracefully.
@@ -72,11 +71,8 @@ export function resolveProviderForCategory(
 ): ProviderResolution {
 	switch (category) {
 		case "Books":
-			// Optional key: works on the free quota without one.
-			return {
-				ok: true,
-				provider: new GoogleBooksProvider(context.apiKeys[GOOGLE_BOOKS_KEY]),
-			};
+			// Open Library needs no key.
+			return { ok: true, provider: new OpenLibraryProvider() };
 		case "Movies":
 			return requireKey(context, TMDB_KEY, "TMDb", (key) =>
 				new TmdbProvider("movie", key),

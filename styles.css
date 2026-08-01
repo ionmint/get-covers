@@ -373,6 +373,19 @@
 	padding-bottom: 6px;
 }
 
+/* Type box flush left; category dropdown + delete stay right on every row. */
+.get-covers-mapping-list .setting-item-info {
+	display: none;
+}
+
+.get-covers-mapping-list .setting-item-control {
+	flex: 1;
+}
+
+.get-covers-mapping-list .setting-item-control input[type="text"] {
+	margin-right: auto;
+}
+
 /*
  * ---- Narrow / mobile viewports ----
  * Refresh drops to its own row below Destination and right-aligns there.
@@ -501,4 +514,41 @@
 	height: auto;
 	padding: 0 4px;
 	line-height: 1.2;
+}
+
+/* ---- Provider API-keys rows (per-provider default results + SerpAPI usage) ---- */
+
+.get-covers-provider-results {
+	width: 4em;
+	text-align: center;
+}
+
+.get-covers-serpapi-row .setting-item-control {
+	flex-wrap: wrap;
+}
+
+.get-covers-serpapi-usage {
+	flex-basis: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 6px;
+	opacity: 0.85;
+}
+
+.get-covers-serpapi-refresh {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 2px;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	cursor: pointer;
+	color: var(--text-muted);
+}
+
+.get-covers-serpapi-refresh:hover {
+	color: var(--text-normal);
 }

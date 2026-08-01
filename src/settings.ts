@@ -4,6 +4,7 @@ import {
 	Plugin,
 	PluginSettingTab,
 	Setting,
+	setIcon,
 } from "obsidian";
 import {
 	CATEGORIES,
@@ -13,6 +14,7 @@ import {
 	SearchMode,
 	TypeMapping,
 } from "./types";
+import { fetchSerpApiUsage } from "./googleImageProvider";
 
 /** Default Type → Category mapping table seeded on first run / reset. */
 export const DEFAULT_TYPE_MAPPINGS: TypeMapping[] = [
@@ -25,9 +27,13 @@ export const DEFAULT_TYPE_MAPPINGS: TypeMapping[] = [
 	{ type: "Game", category: "Games" },
 ];
 
+/** Upper bound for a per-provider "Default results" value (matches the modal cap). */
+export const MAX_PROVIDER_RESULTS = 50;
+
 /** Default settings, merged with persisted data on load. */
 export const DEFAULT_SETTINGS: CoverSearchSettings = {
 	apiKeys: {},
+	providerResultLimits: {},
 	downloadFolder: "Assets/Covers/",
 	destinationProperty: "cover",
 	typeProperty: "Type",
@@ -56,6 +62,7 @@ export function mergeSettings(loaded: unknown): CoverSearchSettings {
 	const base: CoverSearchSettings = {
 		...DEFAULT_SETTINGS,
 		apiKeys: { ...DEFAULT_SETTINGS.apiKeys },
+		providerResultLimits: { ...DEFAULT_SETTINGS.providerResultLimits },
 		typeMappings: DEFAULT_SETTINGS.typeMappings.map((m) => ({ ...m })),
 	};
 
@@ -75,6 +82,23 @@ export function mergeSettings(loaded: unknown): CoverSearchSettings {
 			}
 		}
 		base.apiKeys = merged;
+	}
+	if (
+		data.providerResultLimits &&
+		typeof data.providerResultLimits === "object"
+	) {
+		const merged: Record<string, number> = {};
+		for (const [key, value] of Object.entries(
+			data.providerResultLimits as Record<string, unknown>,
+		)) {
+			if (typeof value === "number" && Number.isFinite(value)) {
+				const n = Math.floor(value);
+				if (n >= 1) {
+					merged[key] = Math.min(n, MAX_PROVIDER_RESULTS);
+				}
+			}
+		}
+		base.providerResultLimits = merged;
 	}
 	if (typeof data.downloadFolder === "string") {
 		base.downloadFolder = data.downloadFolder;
@@ -135,6 +159,20 @@ function sanitizeMappings(raw: unknown[]): TypeMapping[] {
 		}
 	}
 	return result;
+}
+
+/** One provider row in the API-keys section. */
+interface ProviderRow {
+	/** Provider id — the key into `apiKeys` and `providerResultLimits`. */
+	id: string;
+	/** Display name (usually "<Provider> (<categories>)"). */
+	name: string;
+	/** One-line description shown under the name. */
+	desc: string;
+	/** Whether this provider needs an API key field. */
+	keyMode: "required" | "none";
+	/** Placeholder for the key field (only used when keyMode === "required"). */
+	placeholder: string;
 }
 
 /** Settings tab UI. */
@@ -261,55 +299,67 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 	}
 
 	/**
-	 * Provider API keys, grouped together. Only providers that need credentials
-	 * get a field: Google Books' key is optional (quota only), TMDb and
-	 * SteamGridDB require one, and AniList needs none (so it has no field).
+	 * Provider API keys and per-provider defaults. Each provider gets one row; a
+	 * key field appears only for providers that need one (Open Library and AniList
+	 * need none). Every row also has a "Default results" box that overrides the
+	 * global Max results for that provider, and SerpAPI shows its live remaining
+	 * monthly calls.
 	 */
 	private renderApiKeys(containerEl: HTMLElement): void {
 		new Setting(containerEl).setName("Provider API keys").setHeading();
 		containerEl.createEl("p", {
 			text:
-				"Stored locally with this vault and never committed. AniList " +
-				"(Anime & Manga) needs no key.",
+				"Stored locally with this vault and never committed. Open Library " +
+				"(Books) and AniList (Anime & Manga) need no key. Each provider can " +
+				"also set a default number of results that overrides Max results.",
 			cls: "setting-item-description",
 		});
 
-		this.addApiKeyField(containerEl, {
-			name: "Google Books API key (optional)",
-			desc:
-				"Optional. Raises the Google Books request quota. Basic cover " +
-				"search (Books) works without a key.",
-			keyId: "googleBooks",
-			placeholder: "Leave empty to use the free quota",
-		});
+		const rows: ProviderRow[] = [
+			{
+				id: "openLibrary",
+				name: "Open Library (Books)",
+				desc: "Covers for the Books category. No API key required.",
+				keyMode: "none",
+				placeholder: "",
+			},
+			{
+				id: "anilist",
+				name: "AniList (Anime & Manga)",
+				desc: "Covers for the Anime and Manga categories. No API key required.",
+				keyMode: "none",
+				placeholder: "",
+			},
+			{
+				id: "tmdb",
+				name: "TMDb (Movies & TV Shows)",
+				desc:
+					"The Movie Database (TMDb) v3 API key. Required for the Movies " +
+					"and TV Shows categories.",
+				keyMode: "required",
+				placeholder: "TMDb v3 API key",
+			},
+			{
+				id: "steamgriddb",
+				name: "SteamGridDB (Games)",
+				desc: "SteamGridDB API key. Required for the Games category.",
+				keyMode: "required",
+				placeholder: "SteamGridDB API key",
+			},
+			{
+				id: "serpapi",
+				name: "SerpAPI (Google Images)",
+				desc:
+					"Required for Google Images mode and the automatic fallback when " +
+					"a note's Type has no mapped provider.",
+				keyMode: "required",
+				placeholder: "SerpAPI key",
+			},
+		];
 
-		this.addApiKeyField(containerEl, {
-			name: "TMDb API key (required for Movies & TV Shows)",
-			desc:
-				"The Movie Database (TMDb) v3 API key. Required to search covers " +
-				"for the Movies and TV Shows categories.",
-			keyId: "tmdb",
-			placeholder: "TMDb v3 API key",
-		});
-
-		this.addApiKeyField(containerEl, {
-			name: "SteamGridDB API key (required for Games)",
-			desc:
-				"SteamGridDB API key. Required to search covers for the Games " +
-				"category.",
-			keyId: "steamgriddb",
-			placeholder: "SteamGridDB API key",
-		});
-
-		this.addApiKeyField(containerEl, {
-			name: "SerpAPI key (required for Google Images)",
-			desc:
-				"SerpAPI key. Required for Google Images mode — used both when you " +
-				"pick Mode: Google Images and when a note's Type has no mapped " +
-				"provider and falls back to it.",
-			keyId: "serpapi",
-			placeholder: "SerpAPI key",
-		});
+		for (const row of rows) {
+			this.renderProviderRow(containerEl, row);
+		}
 
 		containerEl.createEl("p", {
 			text:
@@ -321,31 +371,116 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 	}
 
 	/**
-	 * Render one password-masked API-key field bound to `apiKeys[keyId]`. Writing
-	 * a blank value deletes the key rather than storing an empty string.
+	 * Render one provider row: an optional password key field (blank clears it), a
+	 * "Default results" number box bound to `providerResultLimits[id]` (blank =
+	 * use the global Max results), and — for SerpAPI only — a live usage readout.
 	 */
-	private addApiKeyField(
-		containerEl: HTMLElement,
-		opts: { name: string; desc: string; keyId: string; placeholder: string },
-	): void {
-		new Setting(containerEl)
-			.setName(opts.name)
-			.setDesc(opts.desc)
-			.addText((text) => {
+	private renderProviderRow(containerEl: HTMLElement, row: ProviderRow): void {
+		const setting = new Setting(containerEl).setName(row.name).setDesc(row.desc);
+
+		if (row.keyMode === "required") {
+			setting.addText((text) => {
 				text.inputEl.type = "password";
 				text
-					.setPlaceholder(opts.placeholder)
-					.setValue(this.plugin.settings.apiKeys[opts.keyId] ?? "")
+					.setPlaceholder(row.placeholder)
+					.setValue(this.plugin.settings.apiKeys[row.id] ?? "")
 					.onChange(async (value) => {
 						const trimmed = value.trim();
 						if (trimmed.length > 0) {
-							this.plugin.settings.apiKeys[opts.keyId] = trimmed;
+							this.plugin.settings.apiKeys[row.id] = trimmed;
 						} else {
-							delete this.plugin.settings.apiKeys[opts.keyId];
+							delete this.plugin.settings.apiKeys[row.id];
 						}
 						await this.plugin.saveSettings();
 					});
 			});
+		}
+
+		// Per-provider default result count. Blank = fall back to global Max results.
+		setting.addText((text) => {
+			text.inputEl.type = "number";
+			text.inputEl.min = "1";
+			text.inputEl.max = String(MAX_PROVIDER_RESULTS);
+			text.inputEl.addClass("get-covers-provider-results");
+			text.inputEl.title = "Default results (overrides Max results)";
+			text.inputEl.setAttribute("aria-label", `${row.name} default results`);
+			const current = this.plugin.settings.providerResultLimits[row.id];
+			text
+				.setPlaceholder(String(this.plugin.settings.maxResults))
+				.setValue(current !== undefined ? String(current) : "")
+				.onChange(async (value) => {
+					const raw = value.trim();
+					if (raw.length === 0) {
+						delete this.plugin.settings.providerResultLimits[row.id];
+						await this.plugin.saveSettings();
+						return;
+					}
+					const parsed = Number.parseInt(raw, 10);
+					if (
+						Number.isInteger(parsed) &&
+						parsed >= 1 &&
+						parsed <= MAX_PROVIDER_RESULTS
+					) {
+						this.plugin.settings.providerResultLimits[row.id] = parsed;
+						await this.plugin.saveSettings();
+					}
+				});
+		});
+
+		if (row.id === "serpapi") {
+			this.renderSerpApiUsage(setting);
+		}
+	}
+
+	/**
+	 * SerpAPI-only: a live "remaining monthly calls" readout, fetched from the free
+	 * account endpoint. Auto-loads once when the settings page opens, and a Refresh
+	 * button re-fetches on demand. The account lookup does not consume search quota.
+	 */
+	private renderSerpApiUsage(setting: Setting): void {
+		// Let the control column wrap so this line can sit under the key input,
+		// rather than after the whole row.
+		setting.settingEl.addClass("get-covers-serpapi-row");
+		const usageWrap = setting.controlEl.createDiv({
+			cls: "get-covers-serpapi-usage",
+		});
+		const textEl = usageWrap.createSpan({
+			cls: "get-covers-serpapi-usage-text setting-item-description",
+		});
+		const refreshBtn = usageWrap.createEl("button", {
+			cls: "get-covers-serpapi-refresh",
+		});
+		refreshBtn.type = "button";
+		setIcon(refreshBtn, "refresh-cw");
+		refreshBtn.setAttribute("aria-label", "Refresh SerpAPI usage");
+		refreshBtn.title = "Refresh SerpAPI usage";
+
+		const refresh = (): void => {
+			const key = this.plugin.settings.apiKeys.serpapi?.trim();
+			if (!key) {
+				textEl.setText("Add a SerpAPI key to see remaining calls.");
+				return;
+			}
+			textEl.setText("Checking SerpAPI usage…");
+			void fetchSerpApiUsage(key).then(
+				(usage) => {
+					textEl.setText(
+						`Used ${usage.thisMonthUsage} of ${usage.searchesPerMonth} ` +
+							`this month · ${usage.searchesLeft} left`,
+					);
+				},
+				(error: unknown) => {
+					const message =
+						error instanceof Error ? error.message : String(error);
+					textEl.setText(`Couldn't fetch SerpAPI usage: ${message}`);
+				},
+			);
+		};
+
+		refreshBtn.addEventListener("click", () => refresh());
+
+		// Auto-load once when the settings page opens.
+		refresh();
 	}
 
 	private renderTypeMappings(containerEl: HTMLElement): void {

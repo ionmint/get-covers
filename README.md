@@ -53,16 +53,9 @@ A minimal and simple [Obsidian](https://obsidian.md) plugin that searches for a 
 
 All keys are stored locally in your vault's `.obsidian/plugins/get-covers/data.json` and are never committed or sent anywhere except to the respective service. Enter them in **Settings → Get Covers → Provider API keys**.
 
-### Google Books — *optional*
+### Open Library (Books) — *no key needed*
 
-Basic Books search works with **no key**. Add one only if you hit rate limits:
-
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/) and create (or pick) a project.
-2. **APIs & Services → Library → Books API → Enable.**
-3. **APIs & Services → Credentials → Create credentials → API key.**
-4. Copy the key into the “Google Books API key (optional)” field.
-
-Free.
+Book covers come from [Open Library](https://openlibrary.org), which needs no API key. There's intentionally no field for it in settings.
 
 ### TMDb (Movies & TV Shows) — *required for those categories*
 
@@ -115,7 +108,7 @@ Open **Settings → Get Covers**.
 
 | Category | Provider | API key |
 | --- | --- | --- |
-| Books | Google Books | Optional (higher quota) |
+| Books | Open Library | None |
 | Movies, TV Shows | TMDb | **Required** |
 | Anime, Manga | AniList | None |
 | Games | SteamGridDB | **Required** |
@@ -286,7 +279,7 @@ src/
   googleImageProvider.ts     Google Images provider (SerpAPI) — the fallback backend
   providers/
     providerHttp.ts          Shared HTTP: requestOnce, retryOptions, JSON type-guards
-    googleBooksProvider.ts   Books
+    openLibraryProvider.ts   Books
     tmdbProvider.ts          Movies + TV Shows
     anilistProvider.ts       Anime + Manga
     steamgriddbProvider.ts   Games
@@ -311,7 +304,7 @@ The plugin is written to work identically across Obsidian Desktop, Android, and 
 ## Credits & attribution
 
 - **This product uses the TMDb API but is not endorsed or certified by TMDb.** (Displayed as required by TMDb's terms of use.)
-- Cover images and metadata are provided by [Google Books](https://books.google.com), [TMDb](https://www.themoviedb.org), [AniList](https://anilist.co), [SteamGridDB](https://www.steamgriddb.com), and — in Google Images mode — [SerpAPI](https://serpapi.com). All trademarks, cover art, and images belong to their respective owners.
+- Cover images and metadata are provided by [Open Library](https://openlibrary.org), [TMDb](https://www.themoviedb.org), [AniList](https://anilist.co), [SteamGridDB](https://www.steamgriddb.com), and — in Google Images mode — [SerpAPI](https://serpapi.com). All trademarks, cover art, and images belong to their respective owners.
 - **Image licensing is your responsibility.** Search results, especially from Google Images, may be copyrighted. Make sure you have the right to download and use a cover before saving it into your vault.
 
 ## License

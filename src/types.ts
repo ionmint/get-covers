@@ -44,8 +44,8 @@ export interface CoverSearchResult {
 	thumbnailUrl: string;
 	/**
 	 * URL for the best-available full-resolution image. Not necessarily a true
-	 * original — some providers (e.g. Google Books) only expose an enlarged
-	 * thumbnail. Requested only on selection.
+	 * original — some providers only expose an enlarged thumbnail (or a fixed
+	 * "large" size). Requested only on selection.
 	 */
 	fullResUrl: string;
 	/** Human-readable label for the result (used as the image alt / aria text). */
@@ -81,8 +81,14 @@ export interface TypeMapping {
 
 /** Persisted plugin settings. */
 export interface CoverSearchSettings {
-	/** API keys keyed by provider id. Empty in Phase 1. */
+	/** API keys keyed by provider id. */
 	apiKeys: Record<string, string>;
+	/**
+	 * Per-provider default result count, keyed by provider id. When set for the
+	 * active provider, it overrides the global `maxResults` (but not a change made
+	 * in the modal's count popover during the session).
+	 */
+	providerResultLimits: Record<string, number>;
 	/** Vault-relative folder where downloaded covers are stored. */
 	downloadFolder: string;
 	/** Frontmatter property the chosen cover is written to. */
