@@ -37,7 +37,7 @@ export const DEFAULT_SETTINGS: CoverSearchSettings = {
 	downloadFolder: "Assets/Covers/",
 	destinationProperty: "cover",
 	typeProperty: "Type",
-	maxResults: 6,
+	maxResults: 4,
 	requestTimeout: 10000,
 	defaultSearchMode: "database",
 	defaultDestination: "download",
@@ -245,23 +245,6 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName("Request timeout (ms)")
-			.setDesc("Network request timeout in milliseconds.")
-			.addText((text) => {
-				text.inputEl.type = "number";
-				text.inputEl.min = "1000";
-				text
-					.setValue(String(this.plugin.settings.requestTimeout))
-					.onChange(async (value) => {
-						const parsed = Number.parseInt(value, 10);
-						if (Number.isFinite(parsed) && parsed >= 1000) {
-							this.plugin.settings.requestTimeout = parsed;
-							await this.plugin.saveSettings();
-						}
-					});
-			});
-
-		new Setting(containerEl)
 			.setName("Default search mode")
 			.setDesc("Mode the search modal opens with.")
 			.addDropdown((dropdown) => {
@@ -393,6 +376,7 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 						}
 						await this.plugin.saveSettings();
 					});
+				this.wrapWithLabel(setting.controlEl, text.inputEl, "API key");
 			});
 		}
 
@@ -425,11 +409,23 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 					}
 				});
+			this.wrapWithLabel(setting.controlEl, text.inputEl, "Results");
 		});
 
 		if (row.id === "serpapi") {
 			this.renderSerpApiUsage(setting);
 		}
+	}
+
+	/** Move a control's input into a labeled column (label sits on top of the input). */
+	private wrapWithLabel(
+		controlEl: HTMLElement,
+		inputEl: HTMLElement,
+		label: string,
+	): void {
+		const field = controlEl.createDiv({ cls: "get-covers-provider-field" });
+		field.createDiv({ cls: "get-covers-provider-label", text: label });
+		field.appendChild(inputEl);
 	}
 
 	/**
@@ -438,17 +434,28 @@ export class CoverSearchSettingTab extends PluginSettingTab {
 	 * button re-fetches on demand. The account lookup does not consume search quota.
 	 */
 	private renderSerpApiUsage(setting: Setting): void {
-		// Let the control column wrap so this line can sit under the key input,
-		// rather than after the whole row.
 		setting.settingEl.addClass("get-covers-serpapi-row");
-		const usageWrap = setting.controlEl.createDiv({
+
+		// Group the already-added key + Results fields into their own row so the
+		// usage line can stack BELOW them within the control column (both stay on
+		// the right of the description, like every other provider row).
+		const controlEl = setting.controlEl;
+		const inputFields = Array.from(controlEl.children);
+		const inputsRow = controlEl.createDiv({
+			cls: "get-covers-serpapi-inputs",
+		});
+		for (const field of inputFields) {
+			inputsRow.appendChild(field);
+		}
+
+		const usageWrap = controlEl.createDiv({
 			cls: "get-covers-serpapi-usage",
 		});
 		const textEl = usageWrap.createSpan({
 			cls: "get-covers-serpapi-usage-text setting-item-description",
 		});
 		const refreshBtn = usageWrap.createEl("button", {
-			cls: "get-covers-serpapi-refresh",
+			cls: "clickable-icon get-covers-serpapi-refresh",
 		});
 		refreshBtn.type = "button";
 		setIcon(refreshBtn, "refresh-cw");

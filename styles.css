@@ -386,6 +386,21 @@
 	margin-right: auto;
 }
 
+/* Every category selector the same width (fits the longest, "TV Shows") so their
+   edges line up; a little breathing room before the delete button. Right-alignment
+   is preserved by the existing input margin-right:auto. Desktop only. */
+body:not(.is-mobile) .get-covers-mapping-list .setting-item-control select {
+	width: 8.5em;
+	flex: 0 0 auto;
+}
+
+body:not(.is-mobile)
+	.get-covers-mapping-list
+	.setting-item-control
+	.extra-setting-button {
+	margin-left: 14px;
+}
+
 /*
  * ---- Narrow / mobile viewports ----
  * Refresh drops to its own row below Destination and right-aligns there.
@@ -523,12 +538,100 @@
 	text-align: center;
 }
 
-.get-covers-serpapi-row .setting-item-control {
+/* Each provider input sits in a labeled column: small label on top of the input. */
+.get-covers-provider-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.get-covers-provider-label {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	line-height: 1.2;
+}
+
+/* The SerpAPI row has an extra usage line beneath the key + Results inputs.
+   The two platforms are handled separately below. */
+
+/* --- Desktop --- control sits beside the description (like 1.1.0); its column
+   stacks the inputs over the usage line, both hugging the right. */
+body:not(.is-mobile) .get-covers-serpapi-row {
+	flex-wrap: nowrap;
+}
+
+body:not(.is-mobile) .get-covers-serpapi-row .setting-item-control {
+	flex-direction: column;
+	align-items: flex-end;
+}
+
+body:not(.is-mobile) .get-covers-serpapi-inputs {
+	display: flex;
+	flex-wrap: nowrap; /* key + Results inline on one row */
+	align-items: flex-end;
+	justify-content: flex-end;
+	gap: 12px;
+}
+
+/* --- Mobile --- keep the key + Results inputs together on one row (as a real
+   flex group spanning the full width, so they never split), with the usage line
+   on its own row below them. */
+.get-covers-serpapi-row {
 	flex-wrap: wrap;
 }
 
-.get-covers-serpapi-usage {
+.is-mobile .get-covers-serpapi-inputs {
+	display: flex;
+	flex-wrap: nowrap;
 	flex-basis: 100%;
+	align-items: flex-end;
+	justify-content: flex-end;
+	gap: 12px;
+	min-width: 0;
+}
+
+/* Key field takes the leftover width and may shrink so Results always fits
+   beside it; Results keeps its compact size. */
+.is-mobile
+	.get-covers-serpapi-inputs
+	> .get-covers-provider-field:first-child {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.is-mobile
+	.get-covers-serpapi-inputs
+	> .get-covers-provider-field:first-child
+	input {
+	width: 100%;
+	min-width: 0;
+}
+
+.is-mobile
+	.get-covers-serpapi-inputs
+	> .get-covers-provider-field:last-child {
+	flex: 0 0 auto;
+}
+
+/* Control wraps so the usage line drops below the inputs group. */
+.is-mobile .get-covers-serpapi-row .setting-item-control {
+	flex-wrap: wrap;
+}
+
+.is-mobile .get-covers-serpapi-usage {
+	flex: 0 0 100%; /* full-width line of its own, under the inputs */
+	justify-content: space-between; /* readout on the left, refresh on the right */
+}
+
+/* Keep the readout fully visible on a single line on mobile; it takes the width
+   the (now icon-sized) refresh button leaves. */
+.is-mobile .get-covers-serpapi-usage-text {
+	white-space: nowrap;
+	flex: 1 1 auto;
+}
+
+/* Usage readout (both platforms): counter + refresh, right-aligned. */
+.get-covers-serpapi-usage {
 	display: flex;
 	align-items: center;
 	justify-content: flex-end;
@@ -537,18 +640,24 @@
 	opacity: 0.85;
 }
 
-.get-covers-serpapi-refresh {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding: 2px;
+/* The refresh control is a `.clickable-icon` (see settings.ts), so Obsidian owns
+   its sizing/shape on every platform — no hand-rolled dimensions or tap-target
+   overrides needed. We only keep it boxless (suppress the .clickable-icon hover
+   highlight) and shift the colour on hover/focus. */
+.get-covers-serpapi-usage .get-covers-serpapi-refresh,
+.get-covers-serpapi-usage .get-covers-serpapi-refresh:hover,
+.get-covers-serpapi-usage .get-covers-serpapi-refresh:focus,
+.get-covers-serpapi-usage .get-covers-serpapi-refresh:focus-visible,
+.get-covers-serpapi-usage .get-covers-serpapi-refresh:active {
+	flex: 0 0 auto;
+	margin: 0;
 	background: transparent;
-	border: none;
+	background-color: transparent;
 	box-shadow: none;
-	cursor: pointer;
 	color: var(--text-muted);
 }
 
-.get-covers-serpapi-refresh:hover {
+.get-covers-serpapi-usage .get-covers-serpapi-refresh:hover,
+.get-covers-serpapi-usage .get-covers-serpapi-refresh:focus-visible {
 	color: var(--text-normal);
 }

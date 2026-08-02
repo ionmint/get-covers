@@ -1,6 +1,6 @@
 {
 	"name": "get-covers",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "Search for a cover image for the current note and assign it to the note's cover frontmatter property.",
 	"main": "main.js",
 	"type": "module",

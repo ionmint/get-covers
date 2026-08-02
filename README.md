@@ -95,8 +95,7 @@ Open **Settings → Get Covers**.
 | Download folder | `Assets/Covers/` | Vault-relative folder where downloaded covers are stored. |
 | Destination property | `cover` | Frontmatter property the chosen cover is written to. |
 | Type property | `Type` | Frontmatter property read to determine a note's Type. |
-| Max results | `6` | Default number of results requested/shown (overridable per-search in the modal). |
-| Request timeout (ms) | `10000` | Total network time budget per search, including retries. |
+| Max results | `4` | Default number of results requested/shown (overridable per-search in the modal). |
 | Default search mode | `database` | Mode the modal opens with (`database` or `google`). |
 | Default destination | `download` | Destination the modal opens with (`download` or `url`). |
 | **Provider API keys** | — | See [API keys](#getting-api-keys) below. |
